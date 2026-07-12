@@ -28,13 +28,16 @@
     --mono: "JetBrains Mono", ui-monospace, monospace;
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { background: var(--bg); }
   html.lenis { height: auto; }
   .lenis.lenis-smooth { scroll-behavior: auto !important; }
   body {
-    background: var(--bg); color: var(--txt); font-family: var(--font);
+    background: transparent; color: var(--txt); font-family: var(--font);
     font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased;
     overflow-x: clip;
   }
+  /* The 3D universe lives behind everything */
+  #gl { position: fixed; inset: 0; z-index: -1; display: block; }
   a { color: inherit; text-decoration: none; }
   ::selection { background: rgba(52,211,153,.3); }
   :focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; border-radius: 4px; }
@@ -76,9 +79,6 @@
 
   /* ===== HERO ===== */
   .hero { min-height: 100vh; position: relative; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 120px 0 0; overflow: clip; }
-  #wave { position: absolute; inset: 0; z-index: -1;
-    -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 78%, transparent 100%);
-            mask-image: linear-gradient(180deg, transparent 0%, #000 18%, #000 78%, transparent 100%); }
   .announce { display: inline-flex; align-items: center; gap: 10px; margin: 0 auto 36px; font-size: 12.5px; font-weight: 500;
     color: var(--txt-2); border: 1px solid var(--line); border-radius: 999px; padding: 7px 9px 7px 15px; background: rgba(6,7,9,.5); backdrop-filter: blur(8px); }
   .announce .chip { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: #042818; background: var(--mint); border-radius: 999px; padding: 3px 9px; letter-spacing: .05em; }
@@ -303,6 +303,7 @@
 </style>
 </head>
 <body>
+<canvas id="gl" aria-hidden="true"></canvas>
 <div id="progress" aria-hidden="true"></div>
 
 <nav id="nav" aria-label="Main">
@@ -324,7 +325,6 @@
 </nav>
 
 <header class="hero" id="top">
-  <canvas id="wave" aria-hidden="true"></canvas>
   <div class="wrap">
     <a class="announce" href="#pricing"><span class="chip">BETA</span> Free during beta — download below <span aria-hidden="true">→</span></a>
     <h1 aria-label="Hear everything. Keep everything.">
@@ -617,6 +617,204 @@
 
 <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
 <script>
+/* ============================================================
+   GLBG — the 3D universe. One WebGL particle system behind the
+   whole page. ~100k GPU points morph between five formations as
+   you scroll: waveform → listening sphere → locked core →
+   word-stream → starburst. Reacts to mouse and scroll velocity.
+   ============================================================ */
+(function () {
+  const canvas = document.getElementById("gl");
+  const gl = canvas.getContext("webgl", { alpha: true, antialias: false, powerPreference: "high-performance" });
+  if (!gl) return; // graceful: page works fine without the universe
+  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const mobile = matchMedia("(max-width: 920px)").matches;
+  const N = mobile ? 38000 : 105000;
+
+  /* ---- formations ---- */
+  const P = [new Float32Array(N * 3), new Float32Array(N * 3), new Float32Array(N * 3), new Float32Array(N * 3), new Float32Array(N * 3)];
+  const seed = new Float32Array(N);
+  const rnd = (() => { let s = 42; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
+  for (let i = 0; i < N; i++) {
+    const i3 = i * 3;
+    seed[i] = rnd();
+    // 0: waveform plane (hero)
+    P[0][i3] = (rnd() - 0.5) * 30;
+    P[0][i3 + 1] = (rnd() - 0.5) * 0.6;
+    P[0][i3 + 2] = (rnd() - 0.5) * 16;
+    // 1: listening sphere (product)
+    { const t = rnd() * Math.PI * 2, u = rnd() * 2 - 1, r = 5.6 + rnd() * 0.5, q = Math.sqrt(1 - u * u);
+      P[1][i3] = r * q * Math.cos(t); P[1][i3 + 1] = r * u; P[1][i3 + 2] = r * q * Math.sin(t); }
+    // 2: locked core (custody) — dense inner orb + thin shell
+    { const shell = rnd() < 0.25, r = shell ? 4.4 : Math.cbrt(rnd()) * 2.1;
+      const t = rnd() * Math.PI * 2, u = rnd() * 2 - 1, q = Math.sqrt(1 - u * u);
+      P[2][i3] = r * q * Math.cos(t); P[2][i3 + 1] = r * u; P[2][i3 + 2] = r * q * Math.sin(t); }
+    // 3: word-stream (live links) — a river flowing in x
+    { const g = (rnd() + rnd() + rnd() - 1.5) * 1.1;
+      P[3][i3] = (rnd() - 0.5) * 34;
+      P[3][i3 + 1] = g * 0.9 + Math.sin(P[3][i3] * 0.4) * 0.8;
+      P[3][i3 + 2] = (rnd() + rnd() - 1) * 2.4; }
+    // 4: starburst (finale)
+    { const t = rnd() * Math.PI * 2, u = rnd() * 2 - 1, r = 3 + Math.pow(rnd(), 0.4) * 13, q = Math.sqrt(1 - u * u);
+      P[4][i3] = r * q * Math.cos(t); P[4][i3 + 1] = r * u * 0.7; P[4][i3 + 2] = r * q * Math.sin(t); }
+  }
+
+  /* ---- shaders ---- */
+  const vsrc = `
+  attribute vec3 p0; attribute vec3 p1; attribute vec3 p2; attribute vec3 p3; attribute vec3 p4;
+  attribute float aSeed;
+  uniform mat4 uVP; uniform float uT; uniform float uMorph; uniform float uVel; uniform float uDPR;
+  varying float vA; varying float vMix;
+  float w(float i, float m) { return clamp(1.0 - abs(m - i), 0.0, 1.0); }
+  void main() {
+    float m = clamp(uMorph + (aSeed - 0.5) * 0.45, 0.0, 4.0);
+    float w0 = w(0.0, m), w1 = w(1.0, m), w2 = w(2.0, m), w3 = w(3.0, m), w4 = w(4.0, m);
+    vec3 pos = p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3 + p4 * w4;
+    float s6 = aSeed * 6.2831;
+    // waveform ripple (hero)
+    pos.y += w0 * sin(pos.x * 0.55 + uT * 1.4 + s6) * (0.9 + uVel * 0.35) * (1.0 - abs(pos.z) * 0.05);
+    pos.y += w0 * sin(pos.z * 0.9 + uT * 0.9) * 0.35;
+    // sphere breath
+    pos *= 1.0 + w1 * sin(uT * 0.8 + s6) * 0.03;
+    // core pulse
+    pos *= 1.0 + w2 * sin(uT * 2.2 + s6) * 0.02;
+    // stream flow
+    pos.x += w3 * (mod(aSeed * 34.0 + uT * (2.2 + uVel * 0.6), 34.0) - 17.0) - w3 * pos.x * 0.98;
+    // gentle universal drift
+    pos += 0.10 * vec3(sin(uT * 0.6 + pos.y), sin(uT * 0.5 + pos.z), sin(uT * 0.4 + pos.x));
+    vec4 mv = uVP * vec4(pos, 1.0);
+    gl_Position = mv;
+    float dist = max(mv.w, 0.001);
+    gl_PointSize = (1.6 + aSeed * 2.2 + uVel * 0.5) * uDPR * (10.0 / dist);
+    vA = clamp(1.6 - dist * 0.055, 0.06, 0.8);
+    vMix = aSeed;
+  }`;
+  const fsrc = `
+  precision mediump float;
+  varying float vA; varying float vMix;
+  void main() {
+    vec2 c = gl_PointCoord - 0.5;
+    float d = length(c);
+    if (d > 0.5) discard;
+    float a = smoothstep(0.5, 0.08, d) * vA;
+    vec3 mint = vec3(0.20, 0.83, 0.60);
+    vec3 cyan = vec3(0.35, 0.78, 0.98);
+    vec3 col = mix(mint, cyan, smoothstep(0.3, 0.9, vMix));
+    gl_FragColor = vec4(col, a);
+  }`;
+  function shader(type, src) {
+    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(s)); return null; }
+    return s;
+  }
+  const vs = shader(gl.VERTEX_SHADER, vsrc), fs = shader(gl.FRAGMENT_SHADER, fsrc);
+  if (!vs || !fs) return;
+  const prog = gl.createProgram();
+  gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
+  gl.useProgram(prog);
+
+  function attr(name, data, size) {
+    const b = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, b);
+    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
+    const loc = gl.getAttribLocation(prog, name);
+    gl.enableVertexAttribArray(loc);
+    gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
+  }
+  attr("p0", P[0], 3); attr("p1", P[1], 3); attr("p2", P[2], 3); attr("p3", P[3], 3); attr("p4", P[4], 3);
+  attr("aSeed", seed, 1);
+  const U = (n) => gl.getUniformLocation(prog, n);
+  const uVP = U("uVP"), uT = U("uT"), uMorph = U("uMorph"), uVel = U("uVel"), uDPR = U("uDPR");
+
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
+  gl.disable(gl.DEPTH_TEST);
+
+  /* ---- matrices ---- */
+  function persp(fov, asp, near, far) {
+    const f = 1 / Math.tan(fov / 2), nf = 1 / (near - far);
+    return [f / asp, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0];
+  }
+  function lookAt(ex, ey, ez, cx, cy, cz) {
+    let zx = ex - cx, zy = ey - cy, zz = ez - cz;
+    let zl = Math.hypot(zx, zy, zz); zx /= zl; zy /= zl; zz /= zl;
+    let xx = 0 * zz - 1 * zy ? 0 : 0; // up = (0,1,0)
+    let ax = 1 * zz - 0 * zy, ay = 0 * zx - 0 * zz, az = 0 * zy - 1 * zx; // up × z
+    ax = zz; ay = 0; az = -zx; // simplified cross((0,1,0), z)
+    let al = Math.hypot(ax, ay, az) || 1; ax /= al; ay /= al; az /= al;
+    const bx = zy * az - zz * ay, by = zz * ax - zx * az, bz = zx * ay - zy * ax;
+    return [ax, bx, zx, 0, ay, by, zy, 0, az, bz, zz, 0,
+      -(ax * ex + ay * ey + az * ez), -(bx * ex + by * ey + bz * ez), -(zx * ex + zy * ey + zz * ez), 1];
+  }
+  function mul(a, b) {
+    const o = new Array(16);
+    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
+      o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
+    }
+    return o;
+  }
+
+  let dpr = 1;
+  function size() {
+    dpr = Math.min(devicePixelRatio || 1, 1.75);
+    canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
+    gl.viewport(0, 0, canvas.width, canvas.height);
+  }
+  size(); addEventListener("resize", size);
+
+  /* ---- scroll → formation timeline ---- */
+  let marks = [0, 1, 2, 3, 4].map((i) => i * 1000);
+  function measure() {
+    const el = (s) => document.querySelector(s);
+    marks = [0,
+      (el("#product")?.offsetTop ?? 800) - innerHeight * 0.5,
+      (el("#privacy")?.offsetTop ?? 2000) - innerHeight * 0.5,
+      (el("#live")?.offsetTop ?? 3000) - innerHeight * 0.4,
+      (el(".final")?.offsetTop ?? 5000) - innerHeight * 0.7];
+  }
+  measure(); addEventListener("resize", measure);
+  setTimeout(measure, 500); setTimeout(measure, 2000);
+  const ease = (x) => x * x * (3 - 2 * x);
+  function morphAt(y) {
+    for (let i = marks.length - 1; i >= 0; i--) {
+      if (y >= marks[i]) {
+        if (i === marks.length - 1) return i;
+        return i + ease(Math.min(1, (y - marks[i]) / Math.max(1, marks[i + 1] - marks[i])));
+      }
+    }
+    return 0;
+  }
+
+  let smoothVel = 0, hidden = false;
+  document.addEventListener("visibilitychange", () => { hidden = document.hidden; });
+
+  window.GLBG = {
+    render(t, y, vel, mx, my) {
+      if (hidden) return;
+      smoothVel += (Math.min(6, Math.abs(vel || 0)) - smoothVel) * 0.06;
+      const time = reduced ? 0 : t * 0.001;
+      const morph = reduced ? 0 : morphAt(y);
+      // camera: slow orbit + mouse parallax + gentle dolly per formation
+      const ang = time * 0.05 + (mx - 0.5) * 0.5;
+      const rad = 15 - Math.min(morph, 1.4) * 1.5 + Math.sin(time * 0.1) * 0.4;
+      const ey = 4.2 + (my - 0.5) * -2.2 + Math.sin(time * 0.07) * 0.5;
+      const view = lookAt(Math.sin(ang) * rad, ey, Math.cos(ang) * rad, 0, 0, 0);
+      const proj = persp(0.9, innerWidth / innerHeight, 0.1, 100);
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT);
+      gl.uniformMatrix4fv(uVP, false, new Float32Array(mul(proj, view)));
+      gl.uniform1f(uT, time);
+      gl.uniform1f(uMorph, morph);
+      gl.uniform1f(uVel, smoothVel);
+      gl.uniform1f(uDPR, dpr);
+      gl.drawArrays(gl.POINTS, 0, N);
+    },
+  };
+  if (reduced) GLBG.render(0, 0, 0, 0.5, 0.5);
+})();
+</script>
+<script>
 (function () {
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const fine = matchMedia("(pointer: fine)").matches;
@@ -677,40 +875,9 @@
     });
   });
 
-  /* ---------- hero canvas: particle waveform ---------- */
-  const cv = document.getElementById("wave");
-  const ctx = cv.getContext("2d");
-  let W, H, dpr;
-  function size() {
-    dpr = Math.min(devicePixelRatio || 1, 2);
-    W = cv.clientWidth; H = cv.clientHeight;
-    cv.width = W * dpr; cv.height = H * dpr;
-    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  }
-  size(); addEventListener("resize", size);
-  let mx = 0.5;
-  addEventListener("mousemove", (e) => { mx = e.clientX / innerWidth; }, { passive: true });
-  const COLS = 90, ROWS = 26;
-  function drawWave(t) {
-    ctx.clearRect(0, 0, W, H);
-    const amp = Math.min(60, 26 + Math.abs(velocity) * 2.2);
-    const cy = H * 0.52;
-    for (let i = 0; i < COLS; i++) {
-      const x = (i / (COLS - 1)) * W;
-      const nx = i / COLS;
-      const env = Math.sin(nx * Math.PI); // taper at edges
-      const a = env * (amp + 22 * Math.sin(t * 0.0006 + nx * 9 + mx * 3));
-      for (let j = 0; j < ROWS; j++) {
-        const nj = j / (ROWS - 1) - 0.5;
-        const y = cy + Math.sin(t * 0.0011 + nx * 7.5 + nj * 1.6) * a * (1 - Math.abs(nj) * 1.4);
-        const d = Math.abs(nj);
-        const green = d < 0.18;
-        ctx.fillStyle = green ? `rgba(52,211,153,${0.5 - d})` : `rgba(148,163,184,${Math.max(0.04, 0.24 - d * 0.4)})`;
-        const r = green ? 1.4 : 1;
-        ctx.fillRect(x, y + nj * 46, r, r);
-      }
-    }
-  }
+  /* ---------- mouse for the 3D universe ---------- */
+  let mx = 0.5, my = 0.5;
+  addEventListener("mousemove", (e) => { mx = e.clientX / innerWidth; my = e.clientY / innerHeight; }, { passive: true });
 
   /* ---------- scrub engine (one rAF for everything) ---------- */
   const stage = document.getElementById("stage");
@@ -735,8 +902,8 @@
     // nav
     document.getElementById("nav").classList.toggle("scrolled", y > 24);
 
+    if (window.GLBG) GLBG.render(t, y, velocity, mx, my);
     if (!reduced) {
-      drawWave(t);
       // hero parallax out
       if (heroWrap && y < innerHeight * 1.2) {
         heroWrap.style.transform = `translateY(${y * 0.28}px)`;
@@ -781,7 +948,7 @@
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  if (reduced) { words.forEach((w) => w.classList.add("lit")); drawWave(0); }
+  if (reduced) { words.forEach((w) => w.classList.add("lit")); }
 
   /* ---------- live transcript demo ---------- */
   const script = [
