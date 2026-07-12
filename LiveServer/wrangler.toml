@@ -6,6 +6,12 @@ rules = [
   { type = "Text", globs = ["**/*.html"], fallthrough = true },
 ]
 
+# Static downloads (the beta DMG). Assets are served before the Worker for
+# matching paths, so /UDITO-beta.dmg just works.
+[assets]
+directory = "public"
+binding = "ASSETS"
+
 [[durable_objects.bindings]]
 name = "SESSIONS"
 class_name = "LiveSession"
