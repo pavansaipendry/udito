@@ -1,0 +1,6 @@
+.build/
+build/
+LiveServer/node_modules/
+LiveServer/.wrangler/
+.DS_Store
+*.log

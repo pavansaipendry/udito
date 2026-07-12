@@ -1,0 +1,15 @@
+name = "ears-live"
+main = "src/index.js"
+compatibility_date = "2026-01-01"
+
+rules = [
+  { type = "Text", globs = ["**/*.html"], fallthrough = true },
+]
+
+[[durable_objects.bindings]]
+name = "SESSIONS"
+class_name = "LiveSession"
+
+[[migrations]]
+tag = "v1"
+new_sqlite_classes = ["LiveSession"]

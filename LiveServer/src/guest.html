@@ -1,0 +1,399 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Ears — Live Transcript</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+  html, body { height: 100%; }
+  body {
+    font: 15px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0d0f14; color: #e8eaf0;
+    display: flex; justify-content: center;
+  }
+  main { width: 100%; max-width: 560px; padding: 28px 20px; display: flex; flex-direction: column; min-height: 100%; }
+  .hidden { display: none !important; }
+  h1 { font-size: 17px; font-weight: 600; letter-spacing: .2px; display: flex; align-items: center; gap: 8px; }
+  h1 .dot { width: 9px; height: 9px; border-radius: 50%; background: #555; }
+  h1 .dot.live { background: #ff4d4d; box-shadow: 0 0 8px #ff4d4d; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  .sub { color: #8a90a0; font-size: 13px; margin-top: 6px; }
+
+  /* Join screen */
+  #join { display: flex; flex-direction: column; gap: 18px; margin-top: 10vh; }
+  input {
+    width: 100%; background: #171a22; border: 1px solid #2a2f3c; border-radius: 12px;
+    color: #e8eaf0; padding: 14px 16px; font-size: 16px; outline: none;
+  }
+  input:focus { border-color: #4a90d9; }
+  #code { font-size: 26px; letter-spacing: 10px; text-align: center; font-variant-numeric: tabular-nums; }
+  button {
+    border: 0; border-radius: 12px; padding: 15px; font-size: 16px; font-weight: 600;
+    background: #2f81f7; color: #fff; cursor: pointer;
+  }
+  button:disabled { opacity: .5; }
+  .error { color: #ff6b6b; font-size: 13px; min-height: 18px; }
+
+  /* Live screen */
+  #live { display: flex; flex-direction: column; flex: 1; gap: 14px; }
+  .bar { display: flex; align-items: center; gap: 10px; }
+  .meter { flex: 1; height: 5px; background: #232838; border-radius: 3px; overflow: hidden; }
+  .meter > div { height: 100%; width: 0%; background: #35c46a; border-radius: 3px; transition: width .08s linear; }
+  .pill {
+    font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+    background: #232838; color: #8a90a0; white-space: nowrap;
+  }
+  .pill.ok { background: rgba(53,196,106,.15); color: #35c46a; }
+  .pill.bad { background: rgba(255,107,107,.15); color: #ff6b6b; }
+  #transcript {
+    flex: 1; background: #12141b; border: 1px solid #232838; border-radius: 14px;
+    padding: 16px; overflow-y: auto; font-size: 16px; line-height: 1.6; min-height: 30vh;
+  }
+  #transcript .interim { color: #8a90a0; }
+  #transcript .placeholder { color: #565c6b; }
+  .controls { display: flex; gap: 10px; }
+  .controls button { flex: 1; }
+  #mute { background: #232838; }
+  #mute.muted { background: #b3541e; }
+  #leave { background: #33241f; color: #ff6b6b; }
+
+  /* Ended screen */
+  #ended { margin-top: 18vh; text-align: center; display: flex; flex-direction: column; gap: 10px; }
+  #ended .big { font-size: 40px; }
+</style>
+</head>
+<body>
+<main>
+  <section id="join">
+    <div>
+      <h1><span class="dot"></span>Live Transcript</h1>
+      <p class="sub">Enter the 6-digit code you were given. Your voice will be transcribed live for the person who sent it.</p>
+    </div>
+    <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000000">
+    <input id="name" maxlength="40" placeholder="Your name (optional)">
+    <button id="joinBtn">Join &amp; start talking</button>
+    <div class="error" id="joinError"></div>
+  </section>
+
+  <section id="live" class="hidden">
+    <h1><span class="dot" id="liveDot"></span>Live Transcript</h1>
+    <div class="bar">
+      <span class="pill" id="connPill">connecting…</span>
+      <div class="meter"><div id="level"></div></div>
+    </div>
+    <div id="transcript"><span class="placeholder">Start talking — your words appear here as the other person sees them.</span></div>
+    <div class="controls">
+      <button id="mute">Mute</button>
+      <button id="leave">Leave</button>
+    </div>
+  </section>
+
+  <section id="ended" class="hidden">
+    <div class="big">👋</div>
+    <h1 style="justify-content:center">Session ended</h1>
+    <p class="sub" id="endedWhy">Thanks — you can close this page.</p>
+  </section>
+</main>
+
+<script>
+"use strict";
+
+const $ = (id) => document.getElementById(id);
+
+const state = {
+  code: null,
+  token: null,
+  ws: null,
+  ended: false,
+  backoff: 500,
+  queue: [],        // audio chunks waiting for the socket (ArrayBuffer)
+  queuedBytes: 0,
+  QUEUE_CAP: 2.5 * 1024 * 1024,   // ~20 s of audio survives a dropout
+  media: null,      // MediaStream
+  audioCtx: null,   // AudioContext (worklet + level meter)
+  format: "pcm",
+  rate: 16000,
+  finals: "",
+  interim: "",
+  muted: false,
+};
+
+$("code").addEventListener("input", () => {
+  const d = $("code").value.replace(/\D/g, "").slice(0, 6);
+  $("code").value = d;
+});
+$("joinBtn").addEventListener("click", join);
+$("name").addEventListener("keydown", (e) => { if (e.key === "Enter") join(); });
+$("mute").addEventListener("click", toggleMute);
+$("leave").addEventListener("click", () => endLocally("You left the session."));
+
+async function join() {
+  const code = $("code").value;
+  if (code.length !== 6) { $("joinError").textContent = "The code is 6 digits."; return; }
+  $("joinBtn").disabled = true;
+  $("joinError").textContent = "";
+  try {
+    const res = await fetch("/join", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ code, name: $("name").value }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error || "Could not join.");
+    state.code = code;
+    state.token = body.token;
+    await startMicrophone();
+    $("join").classList.add("hidden");
+    $("live").classList.remove("hidden");
+    connect();
+  } catch (err) {
+    $("joinError").textContent =
+      err.name === "NotAllowedError"
+        ? "Microphone permission is required — allow it and try again."
+        : err.message;
+    $("joinBtn").disabled = false;
+  }
+}
+
+// MARK: - Microphone capture
+// Raw 16 kHz linear16 PCM via AudioWorklet on every browser. Deliberately NOT
+// MediaRecorder/Opus: a containerized stream is only parseable from its first
+// bytes, which makes reconnects and buffer flushes fragile. Raw PCM is
+// resumable at any byte, so the offline queue and the relay's Deepgram
+// reconnects are always safe. Bandwidth is 32 KB/s — fine on any mobile link.
+
+async function startMicrophone() {
+  // Raw, unprocessed mic. This stream is one-way (nothing plays on this
+  // device) so there is no echo to cancel, and browser noise suppression /
+  // AGC are tuned for calls — they clip quiet word onsets, which the
+  // recognizer needs. ASR models want the unfiltered signal.
+  state.media = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      echoCancellation: false,
+      noiseSuppression: false,
+      autoGainControl: false,
+      channelCount: 1,
+    },
+  });
+  startLevelMeter(state.media);
+  state.format = "pcm";
+  await startWorklet();
+}
+
+async function startWorklet() {
+  const ctx = state.audioCtx ?? new (window.AudioContext || window.webkitAudioContext)();
+  state.audioCtx = ctx;
+  await ctx.resume();
+  const workletSource = `
+    class PCM16 extends AudioWorkletProcessor {
+      constructor() {
+        super();
+        this.ratio = sampleRate / 16000;
+        // Anti-aliasing low-pass (windowed-sinc FIR, 7.2 kHz cutoff) before
+        // decimation. Without it, everything above 8 kHz folds back into the
+        // speech band as phantom noise and the recognizer mis-hears words.
+        const TAPS = 63;
+        const cutoff = Math.min(7200 / sampleRate, 0.45);
+        const mid = (TAPS - 1) / 2;
+        this.taps = new Float32Array(TAPS);
+        let gain = 0;
+        for (let i = 0; i < TAPS; i++) {
+          const x = i - mid;
+          const sinc = x === 0 ? 2 * Math.PI * cutoff : Math.sin(2 * Math.PI * cutoff * x) / x;
+          const hamming = 0.54 - 0.46 * Math.cos((2 * Math.PI * i) / (TAPS - 1));
+          this.taps[i] = sinc * hamming;
+          gain += this.taps[i];
+        }
+        for (let i = 0; i < TAPS; i++) this.taps[i] /= gain; // unity passband gain
+        this.hist = new Float32Array(TAPS - 1); // filter continuity across blocks
+        this.filtered = []; // band-limited input awaiting resample
+        this.readPos = 0;
+        // 30 ms chunks: Deepgram recommends 20-250 ms per message, and
+        // smaller chunks mean it starts recognizing sooner. WS overhead at
+        // ~33 msg/s is negligible.
+        this.out = new Int16Array(480);
+        this.outLen = 0;
+      }
+      process(inputs) {
+        const input = inputs[0] && inputs[0][0];
+        if (!input) return true;
+        const TAPS = this.taps.length;
+        // Convolve at the input rate, seeded with the previous block's tail.
+        const ext = new Float32Array(this.hist.length + input.length);
+        ext.set(this.hist);
+        ext.set(input, this.hist.length);
+        for (let i = 0; i + TAPS <= ext.length; i++) {
+          let acc = 0;
+          for (let t = 0; t < TAPS; t++) acc += ext[i + t] * this.taps[t];
+          this.filtered.push(acc);
+        }
+        this.hist = ext.slice(ext.length - (TAPS - 1));
+        // The filtered signal is band-limited well below the input Nyquist,
+        // so linear interpolation is now an accurate way to pick 16 kHz points.
+        while (this.readPos + 1 < this.filtered.length) {
+          const idx = Math.floor(this.readPos);
+          const frac = this.readPos - idx;
+          const sample = this.filtered[idx] * (1 - frac) + this.filtered[idx + 1] * frac;
+          const clamped = Math.max(-1, Math.min(1, sample));
+          this.out[this.outLen++] = clamped < 0 ? clamped * 0x8000 : clamped * 0x7fff;
+          this.readPos += this.ratio;
+          if (this.outLen === this.out.length) {
+            this.port.postMessage(this.out.slice(0).buffer, []);
+            this.outLen = 0;
+          }
+        }
+        const consumed = Math.floor(this.readPos);
+        this.filtered = this.filtered.slice(consumed);
+        this.readPos -= consumed;
+        return true;
+      }
+    }
+    registerProcessor("pcm16", PCM16);
+  `;
+  const moduleURL = URL.createObjectURL(new Blob([workletSource], { type: "text/javascript" }));
+  await ctx.audioWorklet.addModule(moduleURL);
+  const source = ctx.createMediaStreamSource(state.media);
+  const node = new AudioWorkletNode(ctx, "pcm16");
+  node.port.onmessage = (event) => sendAudio(event.data);
+  source.connect(node);
+  // Keep the graph alive without echoing the mic to the speakers.
+  const sink = ctx.createGain();
+  sink.gain.value = 0;
+  node.connect(sink).connect(ctx.destination);
+  state.rate = 16000;
+}
+
+// MARK: - Level meter (local UI + relayed so the host sees you're talking)
+
+function startLevelMeter(media) {
+  const ctx = state.audioCtx ?? new (window.AudioContext || window.webkitAudioContext)();
+  state.audioCtx = ctx;
+  const analyser = ctx.createAnalyser();
+  analyser.fftSize = 512;
+  ctx.createMediaStreamSource(media).connect(analyser);
+  const data = new Float32Array(analyser.fftSize);
+  let lastSent = 0;
+  setInterval(() => {
+    analyser.getFloatTimeDomainData(data);
+    let sum = 0;
+    for (let i = 0; i < data.length; i++) sum += data[i] * data[i];
+    const level = Math.min(1, Math.sqrt(sum / data.length) * 6);
+    $("level").style.width = (state.muted ? 0 : level * 100) + "%";
+    const now = Date.now();
+    if (now - lastSent > 200 && state.ws?.readyState === 1) {
+      lastSent = now;
+      state.ws.send(JSON.stringify({ type: "level", value: state.muted ? 0 : level }));
+    }
+  }, 100);
+}
+
+// MARK: - Socket with dropout buffering
+
+function socketURL() {
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  return `${proto}//${location.host}/guest?code=${state.code}&token=${encodeURIComponent(state.token)}` +
+         `&format=${state.format}&rate=${state.rate}`;
+}
+
+function connect() {
+  if (state.ended) return;
+  const ws = new WebSocket(socketURL());
+  ws.binaryType = "arraybuffer";
+  state.ws = ws;
+  setPill("connecting…", "");
+
+  ws.onopen = () => {
+    state.backoff = 500;
+    setPill("live", "ok");
+    $("liveDot").classList.add("live");
+    // Flush everything captured while offline — words arrive late, not lost.
+    for (const chunk of state.queue) ws.send(chunk);
+    state.queue = [];
+    state.queuedBytes = 0;
+  };
+  ws.onmessage = (event) => {
+    if (typeof event.data !== "string") return;
+    let msg;
+    try { msg = JSON.parse(event.data); } catch { return; }
+    if (msg.type === "result") renderResult(msg);
+    else if (msg.type === "ping") { try { ws.send(JSON.stringify({ type: "pong" })); } catch {} }
+    else if (msg.type === "ended") endLocally(msg.reason === "host" ? "The host ended the session." : "The session expired.");
+  };
+  ws.onclose = () => {
+    if (state.ended || state.ws !== ws) return;
+    state.ws = null;
+    $("liveDot").classList.remove("live");
+    setPill("reconnecting…", "bad");
+    const delay = state.backoff;
+    state.backoff = Math.min(state.backoff * 2, 8000);
+    setTimeout(connect, delay);
+  };
+  ws.onerror = () => { try { ws.close(); } catch {} };
+}
+
+function sendAudio(buffer) {
+  if (state.ws?.readyState === 1) {
+    state.ws.send(buffer);
+    return;
+  }
+  state.queue.push(buffer);
+  state.queuedBytes += buffer.byteLength;
+  while (state.queuedBytes > state.QUEUE_CAP && state.queue.length) {
+    state.queuedBytes -= state.queue[0].byteLength;
+    state.queue.shift();
+  }
+}
+
+// MARK: - Self-view transcript
+
+function renderResult(msg) {
+  if (msg.isFinal) {
+    if (msg.text) state.finals = state.finals ? state.finals + " " + msg.text : msg.text;
+    state.interim = "";
+  } else {
+    state.interim = msg.text;
+  }
+  const el = $("transcript");
+  el.innerHTML = "";
+  el.append(document.createTextNode(state.finals));
+  if (state.interim) {
+    const span = document.createElement("span");
+    span.className = "interim";
+    span.textContent = (state.finals ? " " : "") + state.interim;
+    el.append(span);
+  }
+  if (!state.finals && !state.interim) {
+    el.innerHTML = '<span class="placeholder">Start talking — your words appear here as the other person sees them.</span>';
+  }
+  el.scrollTop = el.scrollHeight;
+}
+
+// MARK: - Controls
+
+function toggleMute() {
+  state.muted = !state.muted;
+  for (const track of state.media?.getAudioTracks() ?? []) track.enabled = !state.muted;
+  $("mute").textContent = state.muted ? "Unmute" : "Mute";
+  $("mute").classList.toggle("muted", state.muted);
+}
+
+function endLocally(why) {
+  if (state.ended) return;
+  state.ended = true;
+  try { state.media?.getTracks().forEach((t) => t.stop()); } catch {}
+  try { state.audioCtx?.close(); } catch {}
+  try { state.ws?.close(1000, "left"); } catch {}
+  $("live").classList.add("hidden");
+  $("join").classList.add("hidden");
+  $("ended").classList.remove("hidden");
+  $("endedWhy").textContent = why + " You can close this page.";
+}
+
+function setPill(text, cls) {
+  $("connPill").textContent = text;
+  $("connPill").className = "pill" + (cls ? " " + cls : "");
+}
+</script>
+</body>
+</html>

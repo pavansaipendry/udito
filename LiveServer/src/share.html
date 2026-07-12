@@ -1,0 +1,136 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ears — Live Meeting Transcript</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0d0f14; color: #e8eaf0;
+    display: flex; justify-content: center;
+  }
+  main { width: 100%; max-width: 760px; padding: 24px 20px; display: flex; flex-direction: column; min-height: 100%; }
+  header { display: flex; align-items: center; gap: 10px; padding-bottom: 14px; }
+  h1 { font-size: 16px; font-weight: 600; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #555; flex-shrink: 0; }
+  .dot.live { background: #ff4d4d; box-shadow: 0 0 8px #ff4d4d; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 50% { opacity: .45; } }
+  .pill { margin-left: auto; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; background: #232838; color: #8a90a0; }
+  .pill.ok { background: rgba(53,196,106,.15); color: #35c46a; }
+  #list { flex: 1; display: flex; flex-direction: column; gap: 14px; padding-bottom: 30px; }
+  .row { display: flex; gap: 10px; align-items: flex-start; }
+  .label {
+    flex-shrink: 0; font-size: 11px; font-weight: 700; padding: 3px 9px; border-radius: 999px;
+    background: rgba(255,159,10,.16); color: #ff9f0a; margin-top: 2px;
+  }
+  .label.you { background: rgba(90,200,250,.16); color: #5ac8fa; }
+  .text { white-space: pre-wrap; }
+  .row.interim .text { color: #8a90a0; }
+  .placeholder { color: #565c6b; text-align: center; margin-top: 18vh; }
+  #ended { display: none; text-align: center; margin-top: 18vh; color: #8a90a0; }
+  #ended .big { font-size: 40px; margin-bottom: 10px; }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <span class="dot" id="dot"></span>
+    <h1>Live Meeting Transcript</h1>
+    <span class="pill" id="pill">connecting…</span>
+  </header>
+  <div id="list"><div class="placeholder">Waiting for the meeting…</div></div>
+  <div id="ended"><div class="big">👋</div>This live transcript has ended.<br>You can close this page.</div>
+</main>
+
+<script>
+"use strict";
+const token = location.pathname.split("/").pop();
+const entries = new Map(); // id -> {row, entry}
+const list = document.getElementById("list");
+let ws = null, ended = false, backoff = 500, pinned = true;
+
+// Auto-scroll unless the reader scrolled up to re-read something.
+window.addEventListener("scroll", () => {
+  pinned = window.innerHeight + window.scrollY >= document.body.scrollHeight - 60;
+});
+
+function connect() {
+  if (ended) return;
+  const proto = location.protocol === "https:" ? "wss:" : "ws:";
+  ws = new WebSocket(`${proto}//${location.host}/watch?token=${encodeURIComponent(token)}`);
+  ws.onopen = () => { backoff = 500; setPill("live", true); };
+  ws.onmessage = (e) => {
+    let msg;
+    try { msg = JSON.parse(e.data); } catch { return; }
+    if (msg.type === "snapshot") {
+      list.innerHTML = "";
+      entries.clear();
+      for (const entry of msg.entries ?? []) upsert(entry);
+      showPlaceholderIfEmpty();
+    } else if (msg.type === "upsert") {
+      upsert(msg.entry);
+    } else if (msg.type === "ping") {
+      try { ws.send(JSON.stringify({ type: "pong" })); } catch {}
+    } else if (msg.type === "ended") {
+      ended = true;
+      document.getElementById("ended").style.display = "block";
+      list.style.display = "none";
+      setPill("ended", false);
+      document.getElementById("dot").classList.remove("live");
+      try { ws.close(); } catch {}
+    }
+  };
+  ws.onclose = () => {
+    if (ended) return;
+    setPill("reconnecting…", false);
+    const delay = backoff;
+    backoff = Math.min(backoff * 2, 8000);
+    setTimeout(connect, delay);
+  };
+  ws.onerror = () => { try { ws.close(); } catch {} };
+}
+
+function upsert(entry) {
+  if (!entry || !entry.id) return;
+  const placeholder = list.querySelector(".placeholder");
+  if (placeholder) placeholder.remove();
+
+  let item = entries.get(entry.id);
+  if (!item) {
+    const row = document.createElement("div");
+    row.className = "row";
+    const label = document.createElement("span");
+    label.className = "label" + (entry.label === "You" ? " you" : "");
+    label.textContent = entry.label ?? "";
+    const text = document.createElement("span");
+    text.className = "text";
+    row.append(label, text);
+    list.append(row);
+    item = { row, text };
+    entries.set(entry.id, item);
+  }
+  item.text.textContent = entry.text ?? "";
+  item.row.classList.toggle("interim", !entry.isFinal);
+  if (pinned) window.scrollTo(0, document.body.scrollHeight);
+}
+
+function showPlaceholderIfEmpty() {
+  if (entries.size === 0) {
+    list.innerHTML = '<div class="placeholder">Waiting for the meeting…</div>';
+  }
+}
+
+function setPill(text, live) {
+  const pill = document.getElementById("pill");
+  pill.textContent = text;
+  pill.className = "pill" + (live ? " ok" : "");
+  document.getElementById("dot").classList.toggle("live", live);
+}
+
+connect();
+</script>
+</body>
+</html>

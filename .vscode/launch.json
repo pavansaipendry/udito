@@ -1,0 +1,28 @@
+{
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:Ghost2}",
+            "name": "Debug Ears",
+            "program": "${workspaceFolder:Ghost2}/.build/debug/Ears",
+            "preLaunchTask": "swift: Build Debug Ears"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "sourceLanguages": [
+                "swift"
+            ],
+            "args": [],
+            "cwd": "${workspaceFolder:Ghost2}",
+            "name": "Release Ears",
+            "program": "${workspaceFolder:Ghost2}/.build/release/Ears",
+            "preLaunchTask": "swift: Build Release Ears"
+        }
+    ]
+}

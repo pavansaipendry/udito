@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CFBundleName</key>
+	<string>Ears</string>
+	<key>CFBundleDisplayName</key>
+	<string>Ears</string>
+	<key>CFBundleIdentifier</key>
+	<string>com.pavansai.ears</string>
+	<key>CFBundleExecutable</key>
+	<string>Ears</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleIconFile</key>
+	<string>AppIcon</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>LSMinimumSystemVersion</key>
+	<string>13.0</string>
+	<key>NSHighResolutionCapable</key>
+	<true/>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>Ears captures your microphone and meeting audio to produce a live transcript.</string>
+	<key>NSAudioCaptureUsageDescription</key>
+	<string>Ears captures the meeting's system audio to transcribe the other participants.</string>
+	<key>NSCalendarsFullAccessUsageDescription</key>
+	<string>Ears reads your calendar only to name saved transcripts after the meeting that was happening.</string>
+	<key>NSCalendarsUsageDescription</key>
+	<string>Ears reads your calendar only to name saved transcripts after the meeting that was happening.</string>
+</dict>
+</plist>
