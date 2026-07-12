@@ -390,19 +390,27 @@ struct HUDView: View {
     private func submitQuestion() {
         let question = draft
         draft = ""
-        var past: [TranscriptLibrary.Meeting] = []
-        if askHistory {
-            let library = TranscriptLibrary()
-            library.reload()
-            past = Copilot.relevantMeetings(for: question, in: library.meetings)
+        let useHistory = askHistory
+        // History scoring reads every saved transcript — never on the main
+        // thread. Scan + score in the background, then ask on main.
+        DispatchQueue.global(qos: .userInitiated).async {
+            var past: [Copilot.PastMeeting] = []
+            if useHistory {
+                let meetings = TranscriptLibrary.scan()
+                past = Copilot.relevantMeetings(for: question, in: meetings) {
+                    (try? String(contentsOf: $0.id, encoding: .utf8)) ?? ""
+                }
+            }
+            DispatchQueue.main.async {
+                copilot.ask(
+                    question,
+                    transcript: session.transcript,
+                    documents: documents,
+                    starFormat: starMode,
+                    pastMeetings: past
+                )
+            }
         }
-        copilot.ask(
-            question,
-            transcript: session.transcript,
-            documents: documents,
-            starFormat: starMode,
-            pastMeetings: past
-        )
     }
 
     @ViewBuilder

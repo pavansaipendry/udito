@@ -61,6 +61,8 @@ export class LiveSession {
         return this.handleAppSocket(request, url);
       case "/guest":
         return this.handleGuestSocket(request, url);
+      case "/ratelimit":
+        return this.handleRateLimit(request);
       case "/share-init":
         return this.handleShareInit(request);
       case "/publish":
@@ -147,6 +149,26 @@ export class LiveSession {
     } else if (age >= LIVE_TTL_MS) {
       await this.wipe("expired");
     }
+  }
+
+  // MARK: - Rate limiting (one "limiter:global" instance serves all IPs)
+
+  /// Sliding-window per-key counter, memory-only — a DO restart forgiving
+  /// the counts is fine; this exists to stop code brute-forcing and
+  /// drive-by session spam, not to bill anyone.
+  async handleRateLimit(request) {
+    const { key, limit, windowMs } = await request.json();
+    const now = Date.now();
+    this.rateBuckets ??= new Map();
+    const fresh = (this.rateBuckets.get(key) ?? []).filter((t) => now - t < windowMs);
+    if (fresh.length >= limit) {
+      this.rateBuckets.set(key, fresh);
+      return json({ ok: false }, 429);
+    }
+    fresh.push(now);
+    this.rateBuckets.set(key, fresh);
+    if (this.rateBuckets.size > 10000) this.rateBuckets.clear(); // churn cap
+    return json({ ok: true });
   }
 
   // MARK: - Live share (host transcript → browser viewers)

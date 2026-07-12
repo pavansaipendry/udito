@@ -7,9 +7,16 @@ struct LibraryView: View {
     @StateObject private var library = TranscriptLibrary()
     @State private var query = ""
     @State private var selectedID: URL?
+    @State private var contentMatchIDs: Set<URL> = []
 
+    /// Names match instantly; body matches arrive from the debounced
+    /// background search below.
     private var filtered: [TranscriptLibrary.Meeting] {
-        library.matching(query)
+        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return library.meetings }
+        return library.meetings.filter {
+            $0.name.localizedCaseInsensitiveContains(trimmed) || contentMatchIDs.contains($0.id)
+        }
     }
 
     private var selected: TranscriptLibrary.Meeting? {
@@ -35,6 +42,23 @@ struct LibraryView: View {
 
             TextField("Search transcripts…", text: $query)
                 .textFieldStyle(.roundedBorder)
+                .task(id: query) {
+                    // Full-text search, debounced and off the main thread —
+                    // typing must stay instant no matter how big the library.
+                    contentMatchIDs = []
+                    let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
+                    guard trimmed.count >= 2 else { return }
+                    try? await Task.sleep(nanoseconds: 250_000_000)
+                    guard !Task.isCancelled else { return }
+                    let meetings = library.meetings
+                    let matches = await Task.detached(priority: .userInitiated) {
+                        Set(meetings.filter { meeting in
+                            ((try? String(contentsOf: meeting.id, encoding: .utf8)) ?? "")
+                                .localizedCaseInsensitiveContains(trimmed)
+                        }.map(\.id))
+                    }.value
+                    if !Task.isCancelled { contentMatchIDs = matches }
+                }
 
             if library.meetings.isEmpty {
                 emptyState
@@ -118,7 +142,7 @@ struct LibraryView: View {
                     Button {
                         let pasteboard = NSPasteboard.general
                         pasteboard.clearContents()
-                        pasteboard.setString(meeting.content, forType: .string)
+                        pasteboard.setString(library.content(meeting), forType: .string)
                     } label: {
                         Image(systemName: "doc.on.doc")
                     }
@@ -146,7 +170,7 @@ struct LibraryView: View {
                 .padding(10)
                 Divider()
                 ScrollView {
-                    Text(meeting.content)
+                    Text(library.content(meeting))
                         .font(.system(size: 12))
                         .textSelection(.enabled)
                         .frame(maxWidth: .infinity, alignment: .leading)

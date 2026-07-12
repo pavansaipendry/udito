@@ -33,6 +33,18 @@ final class LiveTranscriptController: ObservableObject {
 
     private var stream: LiveTranscriptStream?
 
+    init() {
+        // Sleep must not kill an active session: pause reconnection attempts
+        // going down, resume (with final-replay) on wake.
+        let center = NSWorkspace.shared.notificationCenter
+        center.addObserver(forName: NSWorkspace.willSleepNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.stream?.pause()
+        }
+        center.addObserver(forName: NSWorkspace.didWakeNotification, object: nil, queue: .main) { [weak self] _ in
+            self?.stream?.resume()
+        }
+    }
+
     static let serverURLDefaultsKey = "liveTranscriptServerURL"
     /// The deployed relay (LiveServer/). A Settings override wins if set.
     static let defaultServerURL = "https://ears-live.pavansaipendry.workers.dev"

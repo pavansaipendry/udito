@@ -24,15 +24,39 @@ final class ClaudeClient {
     ) {
         cancel()
         task = Task {
-            do {
-                try await Self.stream(apiKey: apiKey, system: system, messages: messages, onDelta: onDelta)
-                if !Task.isCancelled { onComplete(nil) }
-            } catch is CancellationError {
-                // superseded by a newer question — stay quiet
-            } catch {
-                if !Task.isCancelled { onComplete(error) }
+            var attempt = 0
+            while true {
+                var received = false
+                do {
+                    try await Self.stream(apiKey: apiKey, system: system, messages: messages) {
+                        received = true
+                        onDelta($0)
+                    }
+                    if !Task.isCancelled { onComplete(nil) }
+                    return
+                } catch is CancellationError {
+                    return // superseded by a newer question — stay quiet
+                } catch {
+                    attempt += 1
+                    // Transient failures retry silently — but only if nothing
+                    // streamed yet, so text is never duplicated.
+                    if !received, attempt <= 2, Self.isTransient(error) {
+                        try? await Task.sleep(nanoseconds: UInt64(attempt) * 1_500_000_000)
+                        if Task.isCancelled { return }
+                        continue
+                    }
+                    if !Task.isCancelled { onComplete(error) }
+                    return
+                }
             }
         }
+    }
+
+    private static func isTransient(_ error: Error) -> Bool {
+        if error is URLError { return true }
+        let message = error.localizedDescription
+        return message.contains("Rate limited") || message.contains("overloaded")
+            || message.contains("(HTTP 5")
     }
 
     func cancel() {
@@ -56,7 +80,7 @@ final class ClaudeClient {
         // Adaptive thinking at low effort: quick answers suited to live meetings.
         let body: [String: Any] = [
             "model": model,
-            "max_tokens": 1024,
+            "max_tokens": 2048,
             "stream": true,
             "thinking": ["type": "adaptive"],
             "output_config": ["effort": "low"],
@@ -91,6 +115,13 @@ final class ClaudeClient {
                    delta["type"] as? String == "text_delta",
                    let text = delta["text"] as? String {
                     onDelta(text)
+                }
+            case "message_delta":
+                // A max_tokens stop means the answer was cut mid-thought —
+                // say so instead of presenting it as complete.
+                if let delta = event["delta"] as? [String: Any],
+                   delta["stop_reason"] as? String == "max_tokens" {
+                    onDelta("\n\n[Answer hit the length limit — ask a follow-up to continue.]")
                 }
             case "message_stop":
                 return

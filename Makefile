@@ -29,10 +29,13 @@ app: build $(ICNS)
 	cp $(ICNS) $(BUNDLE)/Contents/Resources/AppIcon.icns
 # Identifier-only designated requirement: keeps the TCC microphone grant
 # valid across rebuilds (ad-hoc signatures otherwise pin it to one build).
-# With a Developer ID certificate, replace with:
+# With a Developer ID certificate, replace with (entitlements are REQUIRED —
+# hardened runtime without them silently denies mic + calendar access):
 #   codesign --force --deep --options runtime \
+#     --entitlements Support/Ears.entitlements \
 #     --sign "Developer ID Application: YOUR NAME (TEAMID)" $(BUNDLE)
 	codesign --force --sign - \
+		--entitlements Support/Ears.entitlements \
 		--requirements '=designated => identifier "com.pavansai.ears"' \
 		$(BUNDLE)
 

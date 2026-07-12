@@ -25,6 +25,7 @@ final class LiveTranscriptStream: NSObject {
     private var task: URLSessionWebSocketTask?
     private var active = false
     private var open = false
+    private var paused = false
     private var backoff: TimeInterval = 0.5
     private var openedAt: Date?
     private var lastSeq = 0
@@ -70,6 +71,31 @@ final class LiveTranscriptStream: NSObject {
         }
     }
 
+    /// Mac is going to sleep: stop reconnect attempts so sleep doesn't burn
+    /// through the give-up counter and kill an otherwise healthy session.
+    func pause() {
+        queue.async {
+            guard self.active, !self.paused else { return }
+            self.paused = true
+            self.task?.cancel(with: .goingAway, reason: nil)
+            self.task = nil
+            self.setOpen(false)
+            EarsLog.info("[live] paused for sleep")
+        }
+    }
+
+    /// Mac woke up: reconnect fresh; missed finals replay via ?since=.
+    func resume() {
+        queue.async {
+            guard self.active, self.paused else { return }
+            self.paused = false
+            self.failuresSinceOpen = 0
+            self.backoff = 0.5
+            EarsLog.info("[live] resuming after wake")
+            self.connect()
+        }
+    }
+
     // MARK: - Connection
 
     private var socketURL: URL {
@@ -85,7 +111,7 @@ final class LiveTranscriptStream: NSObject {
     }
 
     private func connect() {
-        guard active, task == nil else { return }
+        guard active, !paused, task == nil else { return }
         let task = session.webSocketTask(with: socketURL)
         self.task = task
         task.resume()
@@ -98,7 +124,7 @@ final class LiveTranscriptStream: NSObject {
         setOpen(false)
         task?.cancel(with: .goingAway, reason: nil)
         task = nil
-        guard active else { return }
+        guard active, !paused else { return }
 
         failuresSinceOpen += 1
         if failuresSinceOpen >= Self.maxFailuresBeforeGivingUp {

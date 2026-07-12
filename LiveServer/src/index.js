@@ -28,10 +28,17 @@ export default {
     }
 
     if (request.method === "POST" && url.pathname === "/sessions") {
+      if (await rateLimited(env, request, "sessions", 20, 60 * 60 * 1000)) {
+        return json({ error: "Too many sessions from this address — try later." }, 429);
+      }
       return createSession(request, env);
     }
 
     if (request.method === "POST" && url.pathname === "/join") {
+      // Tight limit: 6-digit codes must not be brute-forceable.
+      if (await rateLimited(env, request, "join", 15, 60 * 1000)) {
+        return json({ error: "Too many attempts — wait a minute and try again." }, 429);
+      }
       let body;
       try {
         body = await request.json();
@@ -56,6 +63,9 @@ export default {
     // Live share: host publishes the meeting transcript; anyone with the
     // link watches. The unguessable token is the credential.
     if (request.method === "POST" && url.pathname === "/shares") {
+      if (await rateLimited(env, request, "shares", 20, 60 * 60 * 1000)) {
+        return json({ error: "Too many shares from this address — try later." }, 429);
+      }
       const token = randomToken();
       const publishKey = randomToken();
       const stub = shareStub(env, token);
@@ -84,6 +94,17 @@ export default {
 
 function shareStub(env, token) {
   return env.SESSIONS.get(env.SESSIONS.idFromName("share:" + token));
+}
+
+/// True when this client address exceeded `limit` calls per window.
+async function rateLimited(env, request, bucket, limit, windowMs) {
+  const ip = request.headers.get("cf-connecting-ip") ?? "unknown";
+  const stub = env.SESSIONS.get(env.SESSIONS.idFromName("limiter:global"));
+  const response = await stub.fetch("https://do/ratelimit", {
+    method: "POST",
+    body: JSON.stringify({ key: `${bucket}:${ip}`, limit, windowMs }),
+  });
+  return response.status === 429;
 }
 
 async function createSession(request, env) {

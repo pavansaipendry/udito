@@ -143,7 +143,9 @@ final class MeetingDocuments: ObservableObject {
         process.arguments = ["-convert", "txt", "-stdout", url.path]
         let output = Pipe()
         process.standardOutput = output
-        process.standardError = Pipe()
+        // Discard stderr rather than piping it: an undrained pipe fills its
+        // buffer on chatty output and deadlocks the conversion.
+        process.standardError = FileHandle.nullDevice
         try process.run()
         let data = output.fileHandleForReading.readDataToEndOfFile()
         process.waitUntilExit()
