@@ -12,6 +12,7 @@
 import { LiveSession } from "./session.js";
 import guestPage from "./guest.html";
 import viewerPage from "./share.html";
+import sitePage from "./site.html";
 
 export { LiveSession };
 
@@ -22,6 +23,13 @@ export default {
     const url = new URL(request.url);
 
     if (request.method === "GET" && url.pathname === "/") {
+      return new Response(sitePage, {
+        headers: { "content-type": "text/html; charset=utf-8" },
+      });
+    }
+
+    // The guest join page moved here when the marketing site took "/".
+    if (request.method === "GET" && url.pathname === "/join") {
       return new Response(guestPage, {
         headers: { "content-type": "text/html; charset=utf-8" },
       });

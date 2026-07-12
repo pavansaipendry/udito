@@ -1,0 +1,538 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UDITO — The sense of hearing, for your Mac</title>
+<meta name="description" content="Live meeting transcription that never stores your conversations in a cloud. Dual-channel transcripts, live share links, remote-guest sessions, and an AI copilot — all on your Mac.">
+<meta property="og:title" content="UDITO — The sense of hearing, for your Mac">
+<meta property="og:description" content="Privacy-first live meeting transcription for macOS. Your words, on your Mac — not on our servers.">
+<meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,700;9..40,800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0B1120;
+    --bg-2: #0F172A;
+    --surface: rgba(255,255,255,.05);
+    --surface-2: rgba(255,255,255,.08);
+    --border: rgba(255,255,255,.09);
+    --text: #F1F5F9;
+    --text-2: #94A3B8;
+    --text-3: #64748B;
+    --accent: #22C55E;
+    --accent-soft: rgba(34,197,94,.14);
+    --you: #5AC8FA;
+    --them: #FF9F0A;
+    --radius: 18px;
+    --font: "DM Sans", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: var(--font); background: var(--bg); color: var(--text);
+    font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  a { color: inherit; text-decoration: none; }
+  ::selection { background: rgba(34,197,94,.35); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+
+  /* Aurora backdrop */
+  .aurora { position: fixed; inset: 0; z-index: -1; overflow: hidden; background: radial-gradient(ellipse at top, var(--bg-2), var(--bg) 60%); }
+  .aurora span { position: absolute; border-radius: 50%; filter: blur(110px); opacity: .35; }
+  .aurora span:nth-child(1) { width: 640px; height: 640px; background: #14532d; top: -220px; left: -140px; animation: drift 26s ease-in-out infinite alternate; }
+  .aurora span:nth-child(2) { width: 520px; height: 520px; background: #164e63; top: 30%; right: -200px; animation: drift 32s ease-in-out infinite alternate-reverse; }
+  .aurora span:nth-child(3) { width: 560px; height: 560px; background: #1e1b4b; bottom: -240px; left: 30%; animation: drift 38s ease-in-out infinite alternate; }
+  @keyframes drift { to { transform: translate3d(60px, 40px, 0) scale(1.12); } }
+
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+
+  /* Nav */
+  nav {
+    position: sticky; top: 0; z-index: 50;
+    backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px);
+    background: rgba(11,17,32,.6); border-bottom: 1px solid var(--border);
+  }
+  .nav-inner { display: flex; align-items: center; gap: 28px; height: 64px; }
+  .logo { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 18px; letter-spacing: .06em; }
+  .logo svg { width: 26px; height: 26px; }
+  .nav-links { display: flex; gap: 22px; margin-left: auto; font-size: 14px; color: var(--text-2); }
+  .nav-links a { transition: color .2s; padding: 6px 2px; }
+  .nav-links a:hover { color: var(--text); }
+  .btn {
+    display: inline-flex; align-items: center; gap: 8px; cursor: pointer;
+    padding: 11px 20px; border-radius: 999px; font-weight: 700; font-size: 14.5px;
+    border: 1px solid transparent; transition: transform .2s ease, box-shadow .2s ease, background .2s ease;
+    min-height: 44px;
+  }
+  .btn:active { transform: scale(.97); }
+  .btn-primary { background: var(--accent); color: #052e16; box-shadow: 0 8px 28px rgba(34,197,94,.28); }
+  .btn-primary:hover { transform: translateY(-1px); box-shadow: 0 12px 34px rgba(34,197,94,.38); }
+  .btn-ghost { background: var(--surface); border-color: var(--border); color: var(--text); }
+  .btn-ghost:hover { background: var(--surface-2); }
+  .nav .btn { padding: 8px 16px; min-height: 38px; }
+
+  /* Hero */
+  header.hero { padding: 92px 0 40px; }
+  .hero-grid { display: grid; grid-template-columns: 1.05fr 1fr; gap: 56px; align-items: center; }
+  .eyebrow {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 700;
+    letter-spacing: .12em; text-transform: uppercase; color: var(--accent);
+    background: var(--accent-soft); border: 1px solid rgba(34,197,94,.25);
+    padding: 6px 14px; border-radius: 999px; margin-bottom: 22px;
+  }
+  h1 { font-size: clamp(38px, 5.4vw, 62px); line-height: 1.06; font-weight: 800; letter-spacing: -.02em; }
+  h1 .grad {
+    background: linear-gradient(120deg, #fff 20%, #86efac 50%, #7dd3fc 80%);
+    -webkit-background-clip: text; background-clip: text; color: transparent;
+  }
+  .sub { margin: 22px 0 30px; font-size: 18.5px; color: var(--text-2); max-width: 46ch; }
+  .cta-row { display: flex; gap: 14px; flex-wrap: wrap; align-items: center; }
+  .cta-note { font-size: 13px; color: var(--text-3); margin-top: 14px; }
+
+  /* Product mockup */
+  .stage { position: relative; perspective: 1200px; }
+  .hud {
+    border-radius: var(--radius); border: 1px solid var(--border);
+    background: linear-gradient(160deg, rgba(30,41,59,.72), rgba(11,17,32,.78));
+    backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+    box-shadow: 0 40px 90px rgba(0,0,0,.5), inset 0 1px 0 rgba(255,255,255,.06);
+    transform: rotateY(-6deg) rotateX(2deg);
+    overflow: hidden;
+  }
+  .hud-bar { display: flex; align-items: center; gap: 7px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  .dot { width: 11px; height: 11px; border-radius: 50%; }
+  .dot.r { background: #ff5f57; } .dot.y { background: #febc2e; } .dot.g { background: #28c840; }
+  .hud-title { margin-left: 8px; font-size: 12px; color: var(--text-3); font-weight: 500; }
+  .live-pill {
+    margin-left: auto; display: inline-flex; align-items: center; gap: 6px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: .08em; color: #ef4444;
+    background: rgba(239,68,68,.12); padding: 4px 10px; border-radius: 999px;
+  }
+  .live-pill i { width: 7px; height: 7px; border-radius: 50%; background: #ef4444; animation: pulse 1.6s infinite; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .hud-body { padding: 18px 16px 22px; min-height: 300px; display: flex; flex-direction: column; gap: 14px; }
+  .line { display: flex; gap: 10px; align-items: flex-start; opacity: 0; transform: translateY(8px); transition: opacity .45s ease, transform .45s ease; }
+  .line.show { opacity: 1; transform: none; }
+  .speaker {
+    flex-shrink: 0; font-size: 10.5px; font-weight: 800; padding: 3px 10px; border-radius: 999px; margin-top: 2px;
+  }
+  .speaker.you { color: var(--you); background: rgba(90,200,250,.14); }
+  .speaker.them { color: var(--them); background: rgba(255,159,10,.14); }
+  .words { font-size: 14px; color: var(--text); }
+  .words .typing { color: var(--text-2); }
+  .caret { display: inline-block; width: 7px; height: 15px; background: var(--text-2); vertical-align: -2px; margin-left: 2px; animation: pulse 1s infinite; }
+
+  .phone {
+    position: absolute; right: -26px; bottom: -42px; width: 195px;
+    border-radius: 24px; border: 1px solid var(--border);
+    background: linear-gradient(170deg, rgba(30,41,59,.9), rgba(11,17,32,.94));
+    backdrop-filter: blur(16px); box-shadow: 0 30px 60px rgba(0,0,0,.55), inset 0 1px 0 rgba(255,255,255,.07);
+    padding: 16px 14px 18px; transform: rotate(3deg);
+  }
+  .phone .cam { width: 54px; height: 5px; background: rgba(255,255,255,.14); border-radius: 3px; margin: 0 auto 14px; }
+  .phone h4 { font-size: 11.5px; color: var(--text-2); font-weight: 500; text-align: center; }
+  .code { display: flex; justify-content: center; gap: 5px; margin: 10px 0 12px; }
+  .code b {
+    width: 24px; height: 32px; display: grid; place-items: center; font-size: 16px;
+    background: var(--surface-2); border: 1px solid var(--border); border-radius: 7px;
+  }
+  .phone .join { display: block; text-align: center; background: var(--accent); color: #052e16; font-size: 12.5px; font-weight: 800; border-radius: 9px; padding: 9px 0; }
+  .meter { display: flex; gap: 3px; justify-content: center; margin-top: 13px; height: 16px; align-items: flex-end; }
+  .meter i { width: 4px; border-radius: 2px; background: var(--accent); animation: eq 1s ease-in-out infinite; }
+  .meter i:nth-child(2) { animation-delay: .15s; } .meter i:nth-child(3) { animation-delay: .3s; }
+  .meter i:nth-child(4) { animation-delay: .45s; } .meter i:nth-child(5) { animation-delay: .6s; }
+  @keyframes eq { 0%,100% { height: 5px; } 50% { height: 16px; } }
+
+  .watchers {
+    position: absolute; left: -18px; top: -20px; display: inline-flex; align-items: center; gap: 8px;
+    font-size: 12px; font-weight: 700; color: var(--text);
+    background: rgba(30,41,59,.9); border: 1px solid var(--border); border-radius: 999px;
+    padding: 8px 14px; backdrop-filter: blur(12px); box-shadow: 0 16px 40px rgba(0,0,0,.4);
+  }
+  .watchers svg { width: 15px; height: 15px; color: var(--accent); }
+
+  /* Sections */
+  section { padding: 84px 0; }
+  .kicker { font-size: 13px; font-weight: 800; letter-spacing: .14em; text-transform: uppercase; color: var(--accent); margin-bottom: 14px; }
+  h2 { font-size: clamp(28px, 3.6vw, 40px); font-weight: 800; letter-spacing: -.015em; line-height: 1.15; }
+  .lead { color: var(--text-2); font-size: 17px; margin-top: 14px; max-width: 62ch; }
+
+  .cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 44px; }
+  .card {
+    border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface);
+    padding: 26px 24px; transition: transform .25s ease, background .25s ease, border-color .25s ease;
+  }
+  .card:hover { transform: translateY(-4px); background: var(--surface-2); border-color: rgba(255,255,255,.16); }
+  .card .icon {
+    width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center;
+    background: var(--accent-soft); color: var(--accent); margin-bottom: 18px;
+  }
+  .card .icon svg { width: 22px; height: 22px; }
+  .card h3 { font-size: 17.5px; font-weight: 700; margin-bottom: 8px; }
+  .card p { font-size: 14.5px; color: var(--text-2); }
+
+  /* Steps */
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; margin-top: 44px; counter-reset: step; }
+  .step { border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); padding: 26px 24px; position: relative; }
+  .step::before {
+    counter-increment: step; content: counter(step, decimal-leading-zero);
+    font-size: 13px; font-weight: 800; color: var(--accent); letter-spacing: .1em;
+  }
+  .step h3 { font-size: 17px; font-weight: 700; margin: 10px 0 8px; }
+  .step p { font-size: 14.5px; color: var(--text-2); }
+
+  /* Privacy band */
+  .band {
+    border-radius: calc(var(--radius) + 6px); border: 1px solid rgba(34,197,94,.25);
+    background: linear-gradient(160deg, rgba(34,197,94,.10), rgba(11,17,32,.4));
+    padding: 46px 42px; display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center;
+  }
+  .flow { display: flex; flex-direction: column; gap: 12px; font-size: 13.5px; }
+  .flow div { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 12px; background: rgba(11,17,32,.55); border: 1px solid var(--border); }
+  .flow svg { width: 17px; height: 17px; flex-shrink: 0; color: var(--accent); }
+  .flow .no { color: var(--text-3); }
+  .flow .no svg { color: #ef4444; }
+
+  /* Compare */
+  .table-scroll { overflow-x: auto; margin-top: 44px; border-radius: var(--radius); border: 1px solid var(--border); }
+  table { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 14.5px; min-width: 640px; }
+  th, td { padding: 15px 18px; text-align: center; border-bottom: 1px solid var(--border); }
+  th { font-size: 13px; letter-spacing: .04em; color: var(--text-2); font-weight: 700; }
+  td:first-child, th:first-child { text-align: left; font-weight: 500; }
+  tr:last-child td { border-bottom: 0; }
+  .udito-col { background: rgba(34,197,94,.07); font-weight: 700; }
+  .yes { color: var(--accent); font-weight: 800; }
+  .no-x { color: var(--text-3); }
+
+  /* Pricing */
+  .plans { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px; margin-top: 44px; max-width: 760px; }
+  .plan { border-radius: var(--radius); border: 1px solid var(--border); background: var(--surface); padding: 30px 28px; }
+  .plan.pro { border-color: rgba(34,197,94,.4); background: linear-gradient(170deg, rgba(34,197,94,.09), var(--surface)); position: relative; }
+  .plan .tag { position: absolute; top: -12px; right: 20px; font-size: 11px; font-weight: 800; letter-spacing: .08em; background: var(--accent); color: #052e16; padding: 4px 12px; border-radius: 999px; }
+  .plan h3 { font-size: 15px; font-weight: 700; color: var(--text-2); }
+  .price { font-size: 38px; font-weight: 800; margin: 10px 0 4px; }
+  .price small { font-size: 14px; color: var(--text-3); font-weight: 500; }
+  .plan ul { list-style: none; margin: 20px 0 26px; display: flex; flex-direction: column; gap: 10px; font-size: 14.5px; color: var(--text-2); }
+  .plan li { display: flex; gap: 10px; align-items: flex-start; }
+  .plan li svg { width: 16px; height: 16px; color: var(--accent); flex-shrink: 0; margin-top: 3px; }
+
+  /* FAQ */
+  .faq { max-width: 760px; margin-top: 40px; }
+  details { border: 1px solid var(--border); border-radius: 14px; background: var(--surface); margin-bottom: 12px; }
+  summary { cursor: pointer; padding: 18px 20px; font-weight: 700; font-size: 15.5px; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 44px; }
+  summary::-webkit-details-marker { display: none; }
+  summary::after { content: "+"; font-size: 20px; color: var(--text-3); transition: transform .25s; }
+  details[open] summary::after { transform: rotate(45deg); }
+  details p { padding: 0 20px 18px; color: var(--text-2); font-size: 14.5px; }
+
+  footer { border-top: 1px solid var(--border); padding: 44px 0 60px; margin-top: 40px; }
+  .foot { display: flex; flex-wrap: wrap; gap: 26px; align-items: center; justify-content: space-between; color: var(--text-3); font-size: 13.5px; }
+  .foot .links { display: flex; gap: 20px; }
+  .foot a:hover { color: var(--text); }
+
+  @media (max-width: 900px) {
+    .hero-grid { grid-template-columns: 1fr; gap: 60px; }
+    .hud { transform: none; }
+    .cards, .steps { grid-template-columns: 1fr; }
+    .band { grid-template-columns: 1fr; padding: 34px 26px; }
+    .plans { grid-template-columns: 1fr; }
+    .nav-links { display: none; }
+    section { padding: 60px 0; }
+    .phone { right: 4px; bottom: -34px; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+    html { scroll-behavior: auto; }
+    .line { opacity: 1; transform: none; }
+  }
+</style>
+</head>
+<body>
+<div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+
+<nav>
+  <div class="wrap nav-inner">
+    <a class="logo" href="#" aria-label="UDITO home">
+      <svg viewBox="0 0 24 24" fill="none" stroke="url(#lg)" stroke-width="2" stroke-linecap="round" aria-hidden="true">
+        <defs><linearGradient id="lg" x1="0" y1="0" x2="24" y2="24"><stop stop-color="#22C55E"/><stop offset="1" stop-color="#5AC8FA"/></linearGradient></defs>
+        <path d="M6 10a6 6 0 1 1 12 0c0 4-3 4.5-3 8a3 3 0 0 1-6 0"/>
+        <path d="M9.5 10a2.5 2.5 0 0 1 5 0"/>
+      </svg>
+      UDITO
+    </a>
+    <div class="nav-links" role="navigation" aria-label="Sections">
+      <a href="#features">Features</a>
+      <a href="#live">Live links</a>
+      <a href="#privacy">Privacy</a>
+      <a href="#pricing">Pricing</a>
+      <a href="#faq">FAQ</a>
+    </div>
+    <a class="btn btn-ghost" href="/join">Have a code?</a>
+    <a class="btn btn-primary" href="mailto:pavansaipendry2002@gmail.com?subject=UDITO%20beta%20access">Get the beta</a>
+  </div>
+</nav>
+
+<header class="hero">
+  <div class="wrap hero-grid">
+    <div>
+      <span class="eyebrow"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="12" r="5"/></svg> Private by architecture</span>
+      <h1>Every word in the room,<br><span class="grad">without giving up one.</span></h1>
+      <p class="sub">UDITO is a live meeting transcriber for macOS. Both sides of the conversation, word by word, half a second behind reality — and none of it ever stored on someone else's server.</p>
+      <div class="cta-row">
+        <a class="btn btn-primary" href="mailto:pavansaipendry2002@gmail.com?subject=UDITO%20beta%20access">Get the beta for macOS</a>
+        <a class="btn btn-ghost" href="#live">See live links</a>
+      </div>
+      <p class="cta-note">macOS 14.4+ · Apple Silicon &amp; Intel · No account required</p>
+    </div>
+    <div class="stage">
+      <div class="watchers">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+        3 watching live
+      </div>
+      <div class="hud" role="img" aria-label="UDITO app window showing a live meeting transcript being written in real time">
+        <div class="hud-bar">
+          <span class="dot r"></span><span class="dot y"></span><span class="dot g"></span>
+          <span class="hud-title">UDITO — Listening</span>
+          <span class="live-pill"><i></i>LIVE</span>
+        </div>
+        <div class="hud-body" id="demo"></div>
+      </div>
+      <div class="phone" aria-label="Phone joining a live transcript session with a code">
+        <div class="cam"></div>
+        <h4>Join live transcript</h4>
+        <div class="code" aria-hidden="true"><b>8</b><b>4</b><b>7</b><b>2</b><b>9</b><b>1</b></div>
+        <span class="join">Joined — speak freely</span>
+        <div class="meter" aria-hidden="true"><i></i><i></i><i></i><i></i><i></i></div>
+      </div>
+    </div>
+  </div>
+</header>
+
+<section id="features">
+  <div class="wrap">
+    <p class="kicker">What it does</p>
+    <h2>A second pair of ears,<br>built into your Mac.</h2>
+    <div class="cards">
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 2a4 4 0 0 1 4 4v5a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4"/></svg></span>
+        <h3>Both voices, live</h3>
+        <p>Your mic and the meeting audio, transcribed in parallel and labeled — You, Them 1, Them 2 — about half a second behind speech.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M4 12a8 8 0 0 1 16 0M8 12a4 4 0 0 1 8 0"/><circle cx="12" cy="12" r="1"/><path d="M12 13v7"/></svg></span>
+        <h3>Live share links</h3>
+        <p>One click mints a link. Anyone who opens it watches your transcript render live in their browser — and it dies the second you end it.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="7" y="2" width="10" height="20" rx="2.5"/><path d="M11 18h2"/></svg></span>
+        <h3>Remote-guest sessions</h3>
+        <p>Give someone a 6-digit code. They open a page on their phone, and everything they say streams into your Mac — from anywhere.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/></svg></span>
+        <h3>AI copilot</h3>
+        <p>Ask anything about the meeting mid-meeting. Draft an answer in your voice, grounded in your documents and what was just said.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 9h18M8 15h5"/></svg></span>
+        <h3>Follow-through, done</h3>
+        <p>Summaries with action items on every save, a one-click follow-up email draft, and transcripts named after your calendar events.</p>
+      </div>
+      <div class="card">
+        <span class="icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><path d="M4 4l16 16"/></svg></span>
+        <h3>Invisible in screen shares</h3>
+        <p>The overlay floats above every app and Space, but screen recordings and shared screens never see it. Only you do.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="live">
+  <div class="wrap">
+    <p class="kicker">Live links</p>
+    <h2>Share the meeting as it happens.</h2>
+    <p class="lead">Three steps, no installs for anyone else, works on any phone browser.</p>
+    <div class="steps">
+      <div class="step"><h3>Create a code or link</h3><p>One click in UDITO mints a private 6-digit code (for a remote speaker) or an unguessable view link (for silent watchers).</p></div>
+      <div class="step"><h3>They open a page</h3><p>No app, no account. A guest speaks into their phone; a viewer just watches words arrive, live, half a second behind reality.</p></div>
+      <div class="step"><h3>You end it, it's gone</h3><p>Ending the session kills the link everywhere and wipes the relay. Nothing is left behind to leak later.</p></div>
+    </div>
+  </div>
+</section>
+
+<section id="privacy">
+  <div class="wrap">
+    <div class="band">
+      <div>
+        <p class="kicker">Privacy</p>
+        <h2>Your meetings never live on our servers.</h2>
+        <p class="lead">Every competitor stores your conversations in their cloud. UDITO keeps transcripts on your Mac, in plain files you own. Audio streams to the transcription engine and evaporates; live links relay words in motion and wipe on end. That's the whole story.</p>
+      </div>
+      <div class="flow" aria-label="What UDITO does and does not do with your data">
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Transcripts saved as files on <b>your Mac</b></div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> Live links wipe themselves when you end them</div>
+        <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M20 6L9 17l-5-5"/></svg> No account needed to use the app</div>
+        <div class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg> No cloud archive of your conversations</div>
+        <div class="no"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M18 6L6 18M6 6l12 12"/></svg> No bots joining your meetings</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="compare">
+  <div class="wrap">
+    <p class="kicker">Versus</p>
+    <h2>The honest comparison.</h2>
+    <div class="table-scroll">
+      <table>
+        <thead><tr><th scope="col">Capability</th><th scope="col" class="udito-col">UDITO</th><th scope="col">Otter</th><th scope="col">Granola</th><th scope="col">Fireflies</th></tr></thead>
+        <tbody>
+          <tr><td>Live word-by-word view</td><td class="udito-col yes">✓</td><td class="yes">✓</td><td class="no-x">—</td><td class="no-x">—</td></tr>
+          <tr><td>No bot joins the call</td><td class="udito-col yes">✓</td><td class="no-x">—</td><td class="yes">✓</td><td class="no-x">—</td></tr>
+          <tr><td>Works with any app that makes sound</td><td class="udito-col yes">✓</td><td class="no-x">—</td><td class="yes">✓</td><td class="no-x">—</td></tr>
+          <tr><td>Conversations stored on vendor cloud</td><td class="udito-col yes">Never</td><td class="no-x">Always</td><td class="no-x">Yes</td><td class="no-x">Always</td></tr>
+          <tr><td>Remote-guest live sessions</td><td class="udito-col yes">✓</td><td class="no-x">—</td><td class="no-x">—</td><td class="no-x">—</td></tr>
+          <tr><td>In-meeting AI copilot</td><td class="udito-col yes">✓</td><td class="no-x">Limited</td><td class="no-x">After</td><td class="no-x">After</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</section>
+
+<section id="pricing">
+  <div class="wrap">
+    <p class="kicker">Pricing</p>
+    <h2>Simple, and honest about beta.</h2>
+    <div class="plans">
+      <div class="plan">
+        <h3>Beta</h3>
+        <p class="price">$0 <small>while in beta</small></p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Everything: live transcripts, share links, guest sessions, AI copilot</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Bring your own transcription &amp; AI keys</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Transcripts stay on your Mac, forever yours</li>
+        </ul>
+        <a class="btn btn-ghost" href="mailto:pavansaipendry2002@gmail.com?subject=UDITO%20beta%20access">Request access</a>
+      </div>
+      <div class="plan pro">
+        <span class="tag">COMING</span>
+        <h3>Pro</h3>
+        <p class="price">$12 <small>/ month</small></p>
+        <ul>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> No keys, no setup — transcription hours included</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Priority relay for live links &amp; guests</li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg> Same privacy: still zero cloud storage of your words</li>
+        </ul>
+        <a class="btn btn-primary" href="mailto:pavansaipendry2002@gmail.com?subject=UDITO%20Pro%20waitlist">Join the waitlist</a>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section id="faq">
+  <div class="wrap">
+    <p class="kicker">FAQ</p>
+    <h2>Fair questions.</h2>
+    <div class="faq">
+      <details>
+        <summary>How is this different from Otter or Granola?</summary>
+        <p>Two ways. First, latency: UDITO shows both sides of the conversation word by word as they're spoken, not polished notes afterwards. Second, custody: they archive your conversations on their servers; UDITO writes files to your Mac and stores nothing about you in any cloud.</p>
+      </details>
+      <details>
+        <summary>Does a bot join my meetings?</summary>
+        <p>Never. UDITO listens to your Mac's own audio — it works identically with Zoom, Meet, Teams, Discord, a phone call, or a YouTube video, with nothing visible to other participants.</p>
+      </details>
+      <details>
+        <summary>What leaves my computer?</summary>
+        <p>Audio streams to the transcription engine (Deepgram) in real time and is not retained as your archive; if you use the AI copilot, the transcript context you ask about is sent to Anthropic for that answer. Transcript files live only on your Mac. Live links relay words in motion and wipe when ended.</p>
+      </details>
+      <details>
+        <summary>Is recording a meeting legal?</summary>
+        <p>Consent laws vary — in many places every participant must agree. UDITO gives you the tools (guests see a clear "you're being transcribed" page; share viewers know they're watching a live transcript), but obtaining consent is your responsibility. Don't be creepy.</p>
+      </details>
+      <details>
+        <summary>What do I need to run it?</summary>
+        <p>A Mac on macOS 14.4 or newer. During beta you bring your own Deepgram key (transcription) and optionally an Anthropic key (AI). The Pro plan will remove the keys entirely.</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<footer>
+  <div class="wrap foot">
+    <span>© 2026 UDITO. The sense of hearing, for your Mac.</span>
+    <span class="links">
+      <a href="/join">Join with a code</a>
+      <a href="mailto:pavansaipendry2002@gmail.com">Contact</a>
+      <a href="#" aria-disabled="true">Privacy</a>
+      <a href="#" aria-disabled="true">Terms</a>
+    </span>
+  </div>
+</footer>
+
+<script>
+// Hero demo: a meeting transcript typing itself, on loop.
+(function () {
+  const lines = [
+    { who: "them", label: "Them 1", text: "Walk me through how the rollout would work for a team like ours." },
+    { who: "you", label: "You", text: "You'd start with the pilot group — the numbers from March make the case for us." },
+    { who: "them", label: "Them 2", text: "And the migration risk? That's my main concern honestly." },
+    { who: "you", label: "You", text: "Fair — we keep the old system live in parallel for two weeks. Nobody loses a day." },
+  ];
+  const host = document.getElementById("demo");
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  if (reduced) {
+    lines.forEach((l) => host.appendChild(renderLine(l, l.text, true)));
+    return;
+  }
+
+  function renderLine(l, text, done) {
+    const row = document.createElement("div");
+    row.className = "line show";
+    row.innerHTML =
+      '<span class="speaker ' + l.who + '">' + l.label + "</span>" +
+      '<span class="words">' +
+      (done ? text : '<span class="typing">' + text + '</span><span class="caret"></span>') +
+      "</span>";
+    return row;
+  }
+
+  let li = 0;
+  function playLine() {
+    if (li >= lines.length) {
+      setTimeout(() => { host.innerHTML = ""; li = 0; playLine(); }, 3600);
+      return;
+    }
+    const l = lines[li];
+    const words = l.text.split(" ");
+    const row = document.createElement("div");
+    row.className = "line";
+    row.innerHTML = '<span class="speaker ' + l.who + '">' + l.label + '</span><span class="words"><span class="typing"></span><span class="caret"></span></span>';
+    host.appendChild(row);
+    requestAnimationFrame(() => row.classList.add("show"));
+    const typing = row.querySelector(".typing");
+    let wi = 0;
+    const tick = setInterval(() => {
+      wi++;
+      typing.textContent = words.slice(0, wi).join(" ");
+      if (wi >= words.length) {
+        clearInterval(tick);
+        // finalize: interim grey → settled white, caret gone
+        setTimeout(() => {
+          row.querySelector(".caret")?.remove();
+          typing.classList.remove("typing");
+          li++;
+          setTimeout(playLine, 500);
+        }, 350);
+      }
+    }, 110);
+  }
+  playLine();
+})();
+</script>
+</body>
+</html>

@@ -143,7 +143,7 @@ struct LiveTranscriptPanel: View {
                 .kerning(5)
                 .textSelection(.enabled)
             if let server = LiveTranscriptController.serverURL {
-                Text("They open \(displayHost(server)) and enter it.\nTheir phone browser is enough — nothing to install.")
+                Text("They open \(displayHost(server))/join and enter it.\nTheir phone browser is enough — nothing to install.")
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -277,7 +277,7 @@ struct LiveTranscriptPanel: View {
 
     private func copyInvite(code: String) {
         guard let server = LiveTranscriptController.serverURL else { return }
-        let invite = "Open \(server.absoluteString) and enter code \(code) — I'll see what you say, live."
+        let invite = "Open \(server.absoluteString)/join and enter code \(code) — I'll see what you say, live."
         let pasteboard = NSPasteboard.general
         pasteboard.clearContents()
         pasteboard.setString(invite, forType: .string)
