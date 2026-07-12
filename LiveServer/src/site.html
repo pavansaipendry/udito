@@ -87,7 +87,70 @@
 
   /* ============ PRODUCT ZOOM TOUR ============ */
   .scene-head { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid var(--g1); padding-top: 20px; margin-bottom: 7vh; color: var(--g3); }
-  .tour { height: 840vh; position: relative; }
+  .tour { height: 1500vh; position: relative; }
+  .camwrap { will-change: transform; position: relative; }
+  .splitrow { display: flex; align-items: center; justify-content: center; gap: 3vw; position: relative; }
+  .panelbox { transition: none; }
+  .idlehint { color: var(--g2); font-size: 13px; text-align: center; margin: auto; line-height: 1.7; }
+  .actpill { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 5px 14px; font-size: 11.5px; font-weight: 700;
+    border: 1px solid rgba(48,209,88,.5); background: rgba(48,209,88,.16); color: #30d158; }
+  .actpill i { width: 0; height: 0; border-left: 8px solid #30d158; border-top: 5px solid transparent; border-bottom: 5px solid transparent; }
+  .actpill.stop { border-color: rgba(255,69,58,.5); background: rgba(255,69,58,.16); color: #ff6961; }
+  .actpill.stop i { border: 0; width: 8px; height: 8px; background: #ff6961; border-radius: 1.5px; }
+  .ttag.guest { background: rgba(255,159,10,.16); color: #ff9f0a; border: 1px dashed rgba(255,159,10,.5); }
+  .trow { display: none; }
+  .trow.vis { display: flex; }
+  .statusdot.off { background: #6b7280; box-shadow: none; }
+  .hicons .guest { color: #8a90a0; }
+  .hicons .guest.hot { color: #ff9f0a; }
+  .liveshare { color: #8a90a0 !important; font-weight: 700; }
+  .liveshare.hot { color: #ff6961 !important; }
+  .mbar i { animation: none; width: 12%; transition: width .2s; }
+  .cdot.off { background: #6b7280; }
+  /* side windows */
+  .sidewin { position: absolute; right: 0; top: 50%; transform: translate(140%, -50%); z-index: 3; }
+  .sidewin.phone { width: 230px; border-radius: 26px; border: 1px solid rgba(255,255,255,.16); background: #16181d; padding: 18px 16px 20px; text-align: center;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .sidewin.phone .cam { width: 56px; height: 5px; border-radius: 3px; background: rgba(255,255,255,.14); margin: 0 auto 14px; }
+  .sidewin.phone h5 { font-size: 10px; color: #8a90a0; letter-spacing: .14em; font-weight: 500; }
+  .codeboxes { display: flex; gap: 5px; justify-content: center; margin: 13px 0; }
+  .codeboxes b { width: 25px; height: 34px; display: grid; place-items: center; font-family: var(--mono); font-size: 16px; color: #fff;
+    background: rgba(255,255,255,.06); border: 1px solid rgba(255,255,255,.16); border-radius: 7px; }
+  .codeboxes b.typed { border-color: #30d158; }
+  .joinbtn { display: block; background: #2f81f7; color: #fff; font-size: 12px; font-weight: 700; border-radius: 9px; padding: 10px 0; }
+  .joinbtn.ok { background: rgba(48,209,88,.2); color: #30d158; }
+  .phonesay { min-height: 40px; margin-top: 12px; font-size: 12.5px; color: #e8eaf0; text-align: left; }
+  .pmeter { display: flex; gap: 3px; justify-content: center; margin-top: 10px; height: 14px; align-items: flex-end; }
+  .pmeter i { width: 4px; border-radius: 2px; background: #30d158; height: 4px; }
+  .pmeter.on i { animation: eqp 1s ease-in-out infinite; }
+  .pmeter.on i:nth-child(2) { animation-delay: .12s; } .pmeter.on i:nth-child(3) { animation-delay: .24s; }
+  .pmeter.on i:nth-child(4) { animation-delay: .36s; } .pmeter.on i:nth-child(5) { animation-delay: .48s; }
+  @keyframes eqp { 0%,100% { height: 4px; } 50% { height: 14px; } }
+  .sidewin.browser, .sidewin.filewin { width: min(380px, 34vw); border-radius: 12px; border: 1px solid rgba(255,255,255,.16); background: #101216; overflow: hidden;
+    box-shadow: 0 30px 80px rgba(0,0,0,.6); }
+  .btop { display: flex; align-items: center; gap: 6px; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,.09); }
+  .btop span { width: 9px; height: 9px; border-radius: 50%; background: #2b2f36; }
+  .btop em { font-family: var(--mono); font-style: normal; font-size: 10px; color: #8a90a0; margin-left: 6px; flex: 1; overflow: hidden; white-space: nowrap; }
+  .btop b { font-size: 9px; color: #ff6961; letter-spacing: .1em; }
+  .bbody { padding: 14px; min-height: 180px; display: flex; flex-direction: column; gap: 10px; }
+  .bbody .vrowm { display: flex; gap: 8px; font-size: 11.5px; color: #e8eaf0; }
+  .bbody .vrowm b { font-family: var(--mono); font-size: 8.5px; padding: 2px 7px; border-radius: 4px; flex-shrink: 0; }
+  .bbody .vrowm b.y { background: rgba(90,200,250,.15); color: #5ac8fa; }
+  .bbody .vrowm b.t { background: rgba(255,159,10,.14); color: #ff9f0a; }
+  .bbody.md { font-size: 11.5px; color: #c9cdd4; gap: 7px; }
+  .bbody.md b { color: #fff; font-family: var(--mono); font-size: 10px; }
+  .beam { position: absolute; left: 50%; top: 50%; width: 0; height: 2px; z-index: 2; background: linear-gradient(90deg, rgba(48,209,88,.1), rgba(48,209,88,.7)); opacity: 0; }
+  .beam i { position: absolute; top: -3px; left: 0; width: 8px; height: 8px; border-radius: 50%; background: #30d158; box-shadow: 0 0 10px #30d158; }
+  .beam .lat { position: absolute; top: -26px; right: 0; font-family: var(--mono); font-size: 10px; color: #30d158; letter-spacing: .08em; }
+  /* cursor + hotkey */
+  .cursor { position: absolute; z-index: 20; width: 22px; height: 22px; left: 0; top: 0; pointer-events: none; opacity: 0; will-change: transform; }
+  .cursor svg { width: 22px; height: 22px; display: block; }
+  .cursor i { position: absolute; left: 2px; top: 2px; width: 26px; height: 26px; border-radius: 50%; border: 2px solid #fff; opacity: 0; transform: scale(.3); }
+  .cursor.click i { animation: rip .5s ease-out; }
+  @keyframes rip { 0% { opacity: .9; transform: scale(.3); } 100% { opacity: 0; transform: scale(1.6); } }
+  .hotkey { position: absolute; z-index: 20; left: 50%; top: 18%; transform: translateX(-50%) scale(.9); opacity: 0; transition: opacity .25s, transform .25s;
+    border: 1px solid rgba(255,255,255,.4); border-bottom-width: 3px; background: rgba(10,10,10,.85); border-radius: 10px; padding: 10px 18px; font-size: 16px !important; color: #fff; }
+  .hotkey.on { opacity: 1; transform: translateX(-50%) scale(1); }
   .guestpill { display: flex; align-items: center; gap: 6px; margin-left: auto; font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; color: var(--white); }
   .guestpill svg { width: 13px; height: 13px; }
   .titlebar .rec { margin-left: 14px; }
@@ -334,83 +397,131 @@
 
 <section class="tour" id="product">
   <div class="tsticky">
-    <div class="scene-head mono"><span>01 — The product</span><span>Scroll to explore</span></div>
-    <span class="stepnum" id="stepnum">01 / 07</span>
-    <div class="panelbox" id="panelbox">
-      <div class="window" id="panel">
-        <div class="titlebar">
-          <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
-          <span id="p-live" style="display:flex;align-items:center;gap:8px;margin-left:10px">
-            <span class="statusdot"></span><span class="hname">Listening</span><span class="htime">12:47</span>
-          </span>
-          <span class="hicons">
-            <span class="guest" id="p-guest">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8.5 8.5a5 5 0 0 0 0 7"/><path d="M5.5 5.5a9 9 0 0 0 0 13"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
-              GUEST LIVE
-            </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M9 3v18"/></svg>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>
-            <span class="stoppill"><i></i>Stop</span>
-          </span>
-        </div>
-        <div class="hudgrid">
-          <div class="demo" id="demo"></div>
-          <div class="vdiv"></div>
-          <div class="ccol" id="p-copilot">
-            <div class="cbar">
-              <span class="chip hot" id="chip-last">⚡ Last message</span>
-              <span class="chip">History</span>
-              <span class="chip" id="chip-star">STAR</span>
+    <div class="scene-head mono"><span>01 — The product</span><span>Scroll — you direct the demo</span></div>
+    <span class="stepnum" id="stepnum">01</span>
+    <div class="camwrap" id="camwrap">
+      <div class="splitrow">
+        <div class="panelbox" id="panelbox">
+          <div class="window" id="panel">
+            <div class="titlebar">
+              <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
+              <span id="p-live" style="display:flex;align-items:center;gap:8px;margin-left:10px">
+                <span class="statusdot" id="hdot"></span><span class="hname" id="hstate">Ready</span><span class="htime" id="htime"></span>
+              </span>
+              <span class="hicons">
+                <span class="guest" id="p-guesticon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8.5 8.5a5 5 0 0 0 0 7"/><path d="M5.5 5.5a9 9 0 0 0 0 13"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
+                </span>
+                <svg id="p-lib" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M4 19V5a2 2 0 0 1 2-2h13v18H6a2 2 0 0 1-2-2z"/><path d="M9 3v18"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M19.1 4.9L17 7M7 17l-2.1 2.1"/></svg>
+                <span class="actpill" id="actpill"><i></i><b id="actlabel">Start</b></span>
+              </span>
             </div>
-            <div class="exch">
-              <span class="exq">✦ what did they just ask?</span>
-              <div class="exa" id="p-answer">
-                <div class="ansv on" id="ans-reg">They asked about migration risk. Say: "We run the old system in parallel for two weeks — nobody loses a day."</div>
-                <div class="ansv" id="ans-star">
-                  <div class="srow"><b>S</b><span>Legacy system in place; the team fears a risky migration.</span></div>
-                  <div class="srow"><b>T</b><span>Show the rollout is safe enough to commit this quarter.</span></div>
-                  <div class="srow"><b>A</b><span>Pilot group first, both systems running in parallel for two weeks.</span></div>
-                  <div class="srow"><b>R</b><span>March pilot: 23% faster handoffs, zero downtime.</span></div>
+            <div class="hudgrid">
+              <div class="demo" id="demo">
+                <div class="trow" data-row="0"><span class="ttag them">THEM 1</span><span class="txt"></span></div>
+                <div class="trow" data-row="1"><span class="ttag you">YOU</span><span class="txt"></span></div>
+                <div class="trow" data-row="2"><span class="ttag them">THEM 2</span><span class="txt"></span></div>
+                <div class="trow" data-row="3"><span class="ttag guest">GUEST</span><span class="txt"></span></div>
+                <div class="idlehint" id="idlehint">Press Start before your meeting.<br>Your voice and the meeting audio are transcribed live.</div>
+              </div>
+              <div class="vdiv"></div>
+              <div class="ccol" id="p-copilot">
+                <div class="cbar">
+                  <span class="chip hot" id="chip-last">⚡ Last message</span>
+                  <span class="chip">History</span>
+                  <span class="chip" id="chip-star">STAR</span>
                 </div>
+                <div class="exch">
+                  <span class="exq" id="exq" style="opacity:0">✦ answer the last question</span>
+                  <div class="exa" id="p-answer">
+                    <div class="ansv" id="ans-reg"></div>
+                    <div class="ansv" id="ans-star">
+                      <div class="srow"><b>S</b><span>Legacy system in place; the team fears a risky migration.</span></div>
+                      <div class="srow"><b>T</b><span>Show the rollout is safe enough to commit this quarter.</span></div>
+                      <div class="srow"><b>A</b><span>Pilot group first, both systems in parallel for two weeks.</span></div>
+                      <div class="srow"><b>R</b><span>March pilot: 23% faster handoffs, zero downtime.</span></div>
+                    </div>
+                  </div>
+                </div>
+                <div class="askrow">✦ Ask AI about the meeting…</div>
               </div>
             </div>
-            <div class="askrow">✦ Ask AI about the meeting…</div>
+            <div class="hfoot">
+              <div class="meters" id="p-meters">
+                <span class="meter"><span class="cdot" id="mdot1"></span> YOU <span class="mbar"><i id="mbar1"></i></span></span>
+                <span class="meter them"><span class="cdot" id="mdot2"></span> THEM <span class="mbar"><i id="mbar2"></i></span></span>
+              </div>
+              <div class="factions">
+                <span class="liveshare" id="p-share">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
+                  <b id="sharelabel">SHARE LIVE</b>
+                </span>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+              </div>
+            </div>
           </div>
         </div>
-        <div class="hfoot">
-          <div class="meters" id="p-meters">
-            <span class="meter"><span class="cdot"></span> YOU <span class="mbar"><i></i></span></span>
-            <span class="meter them"><span class="cdot"></span> THEM <span class="mbar"><i></i></span></span>
+
+        <div class="beam" id="beam"><i id="beamdot"></i><span class="lat" id="lat">≈ 0.5 s</span></div>
+
+        <div class="sidewin phone" id="win-guest">
+          <div class="cam"></div>
+          <h5 class="mono">Join live transcript</h5>
+          <div class="codeboxes" id="codeboxes">
+            <b></b><b></b><b></b><b></b><b></b><b></b>
           </div>
-          <div class="factions">
-            <span class="liveshare" id="p-share">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-              LIVE · 2 WATCHING
-            </span>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="M3 7l9 6 9-6"/></svg>
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="9" y="9" width="12" height="12" rx="2"/><path d="M5 15V5a2 2 0 0 1 2-2h10"/></svg>
+          <span class="joinbtn" id="joinbtn">Join &amp; start talking</span>
+          <div class="phonesay" id="phonesay"></div>
+          <div class="pmeter" id="pmeter"><i></i><i></i><i></i><i></i><i></i></div>
+        </div>
+
+        <div class="sidewin browser" id="win-view">
+          <div class="btop"><span></span><span></span><span></span><em>udito…/v/xK2…9w</em><b class="mono" id="wcount">2 WATCHING</b></div>
+          <div class="bbody" id="vmirror"></div>
+        </div>
+
+        <div class="sidewin filewin" id="win-lib">
+          <div class="btop"><span></span><span></span><span></span><em>Design sync — 2026-07-12.md</em></div>
+          <div class="bbody md">
+            <b># Summary</b>
+            <p>Rollout agreed: pilot group first, both systems in parallel for two weeks. March numbers (23% faster handoffs) carried the decision.</p>
+            <b># Action items</b>
+            <p>— You: send the timeline today<br>— Them: name the pilot group by Friday</p>
+            <b># Transcript</b>
+            <p><span style="color:#ff9f0a">**Them 1**</span> (10:02): Walk me through how the rollout would work…</p>
           </div>
         </div>
       </div>
+      <div class="cursor" id="cur"><svg viewBox="0 0 24 24"><path d="M5 3l14 8-6.5 1.5L9 19z" fill="#fff" stroke="#000" stroke-width="1.4"/></svg><i id="ripple"></i></div>
+      <div class="hotkey mono" id="hotkey">⌘⇧A</div>
     </div>
     <div class="tscrim" aria-hidden="true"></div>
     <div class="captions" id="captions" aria-hidden="true">
-      <div class="cap"><h4>This is UDITO.</h4><p>Exactly what you'll download — one window, everything live.</p></div>
-      <div class="cap"><h4>The transcript, live.</h4><p>Every word as it's spoken. You in blue. Them in orange. Half a second behind reality.</p></div>
-      <div class="cap"><h4>It's listening.</h4><p>One click to start. It hears the meeting and your mic — nothing joins the call.</p></div>
-      <div class="cap"><h4>A faraway voice, in the room.</h4><p>Give someone a six-digit code — their phone streams their voice straight into your transcript.</p></div>
-      <div class="cap"><h4>Ask while it happens.</h4><p>One click answers the last thing they said — in your voice, ready to say aloud.</p></div>
-      <div class="cap"><h4>Or make it STAR.</h4><p>The same answer, structured: Situation, Task, Action, Result.</p></div>
-      <div class="cap"><h4>Share it, live.</h4><p>One link — anyone watches the words arrive. End it, and it's gone.</p></div>
-      <div class="cap"><h4>Both voices.</h4><p>Your mic and their audio, tracked separately, labeled automatically.</p></div>
-      <div class="cap"><h4>Yours, forever.</h4><p>Everything saved as files on your Mac. Nowhere else.</p></div>
+      <div class="cap"><h4>This is UDITO.</h4><p>Exactly what you download. Nothing happens until you say so.</p></div>
+      <div class="cap"><h4>Click Start.</h4><p>That's the whole setup.</p></div>
+      <div class="cap"><h4>They talk. You talk.</h4><p>Every word lands, labeled — half a second behind reality.</p></div>
+      <div class="cap"><h4>It's listening.</h4><p>Your mic and the meeting audio. Nothing joins the call.</p></div>
+      <div class="cap"><h4>One hotkey → AI.</h4><p>Their last question goes straight to the copilot.</p></div>
+      <div class="cap"><h4>The answer, in your voice.</h4><p>Ready to say out loud.</p></div>
+      <div class="cap"><h4>Click STAR.</h4><p>The same answer, structured: Situation, Task, Action, Result.</p></div>
+      <div class="cap"><h4>Stop. Saved.</h4><p>The transcript is already a file on your Mac.</p></div>
+      <div class="cap"><h4>Now — someone far away.</h4><p>Open a live transcript session. UDITO mints a code.</p></div>
+      <div class="cap"><h4>They enter the code.</h4><p>Any phone browser. No app, no account.</p></div>
+      <div class="cap"><h4>Connected.</h4><p>They speak there — it lands here. Watch the latency.</p></div>
+      <div class="cap"><h4>End it. The code dies.</h4><p>Nothing left running anywhere.</p></div>
+      <div class="cap"><h4>Or broadcast it.</h4><p>One link — anyone watches your transcript arrive, live.</p></div>
+      <div class="cap"><h4>They see what you see.</h4><p>Word by word, in their browser.</p></div>
+      <div class="cap"><h4>Everything is kept.</h4><p>Open any past meeting — summary and action items already written.</p></div>
+      <div class="cap"><h4>That's UDITO.</h4><p>Yours. On your Mac. Nowhere else.</p></div>
     </div>
     <div class="tour-m wrap">
-      <div><h4>The transcript, live</h4><p>Every word as it's spoken. You in white, them in outline.</p></div>
+      <div><h4>The transcript, live</h4><p>Every word as it's spoken. You in blue, them in orange.</p></div>
       <div><h4>A faraway voice, in the room</h4><p>A six-digit code streams a phone into your transcript.</p></div>
-      <div><h4>Ask while it happens</h4><p>The copilot answers in your voice, from what was just said.</p></div>
+      <div><h4>Ask while it happens</h4><p>The copilot answers in your voice — regular or STAR format.</p></div>
       <div><h4>Share it, live</h4><p>One link — anyone watches the words arrive. End it, it's gone.</p></div>
-      <div><h4>Yours, forever</h4><p>Saved as files on your Mac. Nowhere else.</p></div>
+      <div><h4>Yours, forever</h4><p>Saved as files on your Mac, with summary and action items.</p></div>
     </div>
   </div>
 </section>
@@ -594,135 +705,268 @@
   const wordsEl = document.getElementById("words");
   let marqX = 0, last = performance.now();
 
-  /* ---- the zoom tour: zoof in, hold + explain, zoof out ---- */
+  /* ================= THE FILM =================
+     A scroll-scrubbed product demo. Scroll = the director's chair:
+     every state below is a pure function of progress p, so scrubbing
+     backwards rewinds the movie perfectly. */
   const tour = document.querySelector(".tour");
+  const cam = document.getElementById("camwrap");
   const panelbox = document.getElementById("panelbox");
   const panel = document.getElementById("panel");
   const caps = [...document.querySelectorAll("#captions .cap")];
   const stepnum = document.getElementById("stepnum");
-  const tourOn = tour && panelbox && !reduced && !matchMedia("(max-width: 860px)").matches;
-  // shot list: what the camera visits, and how tight it frames it
-  const shotDefs = [null, "#demo", "#p-live", "#p-guest", "#p-copilot", "#p-answer", "#p-share", "#p-meters", null];
-  let shots = [];
+  const cur = document.getElementById("cur");
+  const tourOn = tour && cam && !reduced && !matchMedia("(max-width: 860px)").matches;
+
+  const $id = (i) => document.getElementById(i);
+  const rows = [...document.querySelectorAll("#demo .trow")];
+  const ROWTEXT = [
+    "Walk me through how the rollout would work for a team like ours.",
+    "Start with the pilot group — the March numbers make the case for us.",
+    "And the migration risk? That's my main concern, honestly.",
+    "Can you hear me? I'm joining from the site — this is my phone talking.",
+  ];
+  const REG = 'They asked about migration risk. Say: "We run the old system in parallel for two weeks — nobody loses a day."';
+  const GUESTSAY = "Can you hear me? I'm joining from the site — this is my phone talking.";
+
+  // ---- the script: timeline marks (fractions of the tour) ----
+  const M = {
+    idle: 0,        curToStart: .020, clickStart: .045,
+    talk0: .055,    talk1: .105,      talk2: .150,   talkEnd: .185,
+    zoomHdr: .195,  hdrEnd: .235,
+    hotkey: .245,   hotkeyEnd: .265,  ansTyped: .330,
+    curToStar: .340, clickStar: .360, starDone: .400,
+    curToStop: .415, clickStop: .440,
+    curToGuest: .455, clickGuest: .475, guestIn: .505,
+    code0: .515,    code1: .565,      clickJoin: .580,
+    beamOn: .595,   guestSay: .610,   guestSaid: .680,
+    curToGuest2: .695, clickGuest2: .715, guestOut: .740,
+    curToShare: .755, clickShare: .775, viewIn: .800, viewHold: .845,
+    viewOut: .865,
+    curToLib: .875, clickLib: .895,  libIn: .915,  libHold: .955,
+    libOut: .970,  end: 1,
+  };
+  // caption index → starts at these marks
+  const CAPMARKS = [0, M.curToStart, M.talk0, M.zoomHdr, M.hotkey, M.hotkeyEnd, M.curToStar, M.curToStop,
+    M.curToGuest, M.code0, M.beamOn, M.curToGuest2, M.curToShare, M.viewIn, M.curToLib, M.libOut];
+
+  const seg = (p, a, b) => Math.min(1, Math.max(0, (p - a) / Math.max(1e-6, b - a)));
+  const ease = (x) => 1 - Math.pow(1 - x, 3);
+  const zoof = (x) => 1 - Math.pow(1 - x, 4);
+  const lerp = (a, b, f) => a + (b - a) * f;
+
+  // ---- measured geometry (base layout, transforms reset) ----
+  let G = null;
   function measureTour() {
     if (!tourOn) return;
+    cam.style.transform = "none";
     panelbox.style.transform = "none";
-    const pr = panel.getBoundingClientRect();
-    shots = shotDefs.map((sel) => {
-      if (!sel) return { x: 0, y: 0, s: 1 };
-      const el = document.querySelector(sel);
-      const r = el.getBoundingClientRect();
-      const cx = r.left + r.width / 2 - (pr.left + pr.width / 2);
-      const cy = r.top + r.height / 2 - (pr.top + pr.height / 2);
-      // frame the element at ~55% of the viewport, capped so it stays sharp
-      const s = Math.min(3.4, Math.max(1.35, Math.min((innerWidth * 0.55) / r.width, (innerHeight * 0.5) / r.height)));
-      return { x: -cx * s, y: -cy * s, s };
-    });
+    const cr = cam.getBoundingClientRect();
+    const c = (sel) => {
+      const r = document.querySelector(sel).getBoundingClientRect();
+      return { x: r.left + r.width / 2 - cr.left, y: r.top + r.height / 2 - cr.top, w: r.width, h: r.height };
+    };
+    G = {
+      cr, panel: c("#panel"), demo: c("#demo"), live: c("#p-live"), copilot: c("#p-copilot"),
+      answer: c("#p-answer"), star: c("#chip-star"), act: c("#actpill"), guesticon: c("#p-guesticon"),
+      share: c("#p-share"), lib: c("#p-lib"),
+    };
   }
+  const camShot = (t, sc) => {
+    if (!G) return { x: 0, y: 0, s: 1 };
+    const s = Math.min(sc || 3, Math.max(1.3, Math.min((innerWidth * .55) / t.w, (innerHeight * .5) / t.h)));
+    return { x: -(t.x - G.panel.x) * s, y: -(t.y - G.panel.y) * s, s };
+  };
   measureTour();
   addEventListener("resize", measureTour);
-  setTimeout(measureTour, 600); setTimeout(measureTour, 2000);
-  const zoof = (x) => 1 - Math.pow(1 - x, 4); // fast attack, soft landing
-  const lerp = (a, b, f) => a + (b - a) * f;
+  setTimeout(measureTour, 700); setTimeout(measureTour, 2200);
+
+  // ---- tiny declarative helpers (cached to avoid DOM churn) ----
+  const cache = {};
+  const setTxt = (id, v) => { if (cache["t" + id] !== v) { cache["t" + id] = v; $id(id).textContent = v; } };
+  const setCls = (id, cls, on) => { const k = "c" + id + cls; if (cache[k] !== on) { cache[k] = on; $id(id).classList.toggle(cls, on); } };
+  const setSty = (id, prop, v) => { const k = "s" + id + prop; if (cache[k] !== v) { cache[k] = v; $id(id).style[prop] = v; } };
+  function typeInto(id, full, prog) {
+    const n = Math.round(full.length * Math.min(1, Math.max(0, prog)));
+    setTxt(id, full.slice(0, n));
+  }
+  function typeRow(i, prog) {
+    const vis = prog > 0;
+    const row = rows[i];
+    if (cache["rv" + i] !== vis) { cache["rv" + i] = vis; row.classList.toggle("vis", vis); }
+    const full = ROWTEXT[i];
+    const n = Math.round(full.split(" ").length * Math.min(1, prog));
+    const text = full.split(" ").slice(0, n).join(" ");
+    const el = row.querySelector(".txt");
+    if (cache["rt" + i] !== text) { cache["rt" + i] = text; el.textContent = text; el.classList.toggle("ghost", prog < 1); }
+  }
+  // cursor path: waypoints of {t, at:'key of G' | [x,y], click}
+  const PATH = [
+    { t: 0.012, at: "demo" }, { t: M.curToStart + .02, at: "act", click: M.clickStart },
+    { t: M.talkEnd, at: "demo" },
+    { t: M.curToStar + .015, at: "star", click: M.clickStar },
+    { t: M.curToStop + .02, at: "act", click: M.clickStop },
+    { t: M.curToGuest + .015, at: "guesticon", click: M.clickGuest },
+    { t: M.curToGuest2 + .015, at: "guesticon", click: M.clickGuest2 },
+    { t: M.curToShare + .015, at: "share", click: M.clickShare },
+    { t: M.curToLib + .015, at: "lib", click: M.clickLib },
+    { t: M.libOut, at: "panel" },
+  ];
+  let lastClickKey = "";
+
+  function film(p) {
+    if (!G) return;
+    // ---------- panel state ----------
+    const started = p >= M.clickStart && p < M.clickStop;
+    setCls("hdot", "off", !started);
+    setTxt("hstate", started ? "Listening" : "Ready");
+    setTxt("htime", started ? "0:" + String(10 + Math.floor(seg(p, M.clickStart, M.clickStop) * 37)).padStart(2, "0") : "");
+    setCls("actpill", "stop", started);
+    setTxt("actlabel", started ? "Stop" : "Start");
+    setSty("idlehint", "display", p < M.talk0 ? "block" : "none");
+    setCls("mdot1", "off", !started); setCls("mdot2", "off", !started);
+    const talking = started && p > M.talk0;
+    setSty("mbar1", "width", talking ? (22 + 50 * Math.abs(Math.sin(p * 300))) + "%" : "8%");
+    setSty("mbar2", "width", talking ? (30 + 45 * Math.abs(Math.cos(p * 260))) + "%" : "8%");
+    // transcript rows
+    typeRow(0, seg(p, M.talk0, M.talk1));
+    typeRow(1, seg(p, M.talk1, M.talk2));
+    typeRow(2, seg(p, M.talk2, M.talkEnd));
+    typeRow(3, p >= M.beamOn ? seg(p, M.guestSay, M.guestSaid) : 0);
+    // hotkey + copilot
+    setCls("hotkey", "on", p >= M.hotkey && p < M.hotkeyEnd);
+    setSty("exq", "opacity", p >= M.hotkeyEnd - .01 ? "1" : "0");
+    setCls("ans-reg", "on", p >= M.hotkeyEnd && p < M.clickStar);
+    if (p >= M.hotkeyEnd && p < M.clickStar) typeInto("ans-reg", REG, seg(p, M.hotkeyEnd, M.ansTyped));
+    setCls("ans-star", "on", p >= M.clickStar);
+    setCls("chip-last", "hot", p >= M.hotkeyEnd && p < M.clickStar);
+    setCls("chip-star", "hot", p >= M.clickStar);
+    [...document.querySelectorAll("#ans-star .srow")].forEach((r, i) => {
+      r.style.opacity = seg(p, M.clickStar + i * .008, M.clickStar + .012 + i * .008);
+    });
+    // header guest icon + footer share label
+    setCls("p-guesticon", "hot", p >= M.clickGuest && p < M.clickGuest2);
+    setCls("p-share", "hot", p >= M.clickShare && p < M.viewOut);
+    setTxt("sharelabel", p >= M.viewIn && p < M.viewOut ? "LIVE · 2 WATCHING" : "SHARE LIVE");
+
+    // ---------- split scenes ----------
+    const gIn = ease(seg(p, M.clickGuest, M.guestIn)) - ease(seg(p, M.clickGuest2, M.guestOut));
+    const vIn = ease(seg(p, M.clickShare, M.viewIn)) - ease(seg(p, M.viewHold, M.viewOut));
+    const lIn = ease(seg(p, M.clickLib, M.libIn)) - ease(seg(p, M.libHold + .01, M.libOut));
+    const split = Math.max(gIn, vIn, lIn);
+    panelbox.style.transform = "translateX(" + (-16 * split) + "%) scale(" + (1 - .1 * split) + ")";
+    setSty("win-guest", "transform", "translate(" + lerp(150, 6, gIn) + "%, -50%)");
+    setSty("win-view", "transform", "translate(" + lerp(150, 4, vIn) + "%, -50%)");
+    setSty("win-lib", "transform", "translate(" + lerp(150, 4, lIn) + "%, -50%)");
+    // guest phone internals
+    const digits = "847291";
+    const typed = Math.floor(seg(p, M.code0, M.code1) * 6.99);
+    [...document.querySelectorAll("#codeboxes b")].forEach((b, i) => {
+      const on = i < typed;
+      if (b.dataset.on !== String(on)) { b.dataset.on = String(on); b.textContent = on ? digits[i] : ""; b.classList.toggle("typed", on); }
+    });
+    const joined = p >= M.clickJoin;
+    setCls("joinbtn", "ok", joined);
+    setTxt("joinbtn", joined ? "✓ Joined — speak freely" : "Join & start talking");
+    setCls("pmeter", "on", joined && p < M.clickGuest2);
+    typeInto("phonesay", GUESTSAY, p >= M.guestSay ? seg(p, M.guestSay - .012, M.guestSaid - .012) : 0);
+    // beam + latency
+    const beamOn = p >= M.beamOn && p < M.clickGuest2 && gIn > .9;
+    setSty("beam", "opacity", beamOn ? "1" : "0");
+    if (beamOn) {
+      const bw = Math.min(innerWidth * .16, 260);
+      setSty("beam", "width", bw + "px");
+      setSty("beam", "left", "calc(50% - " + (bw * .55) + "px)");
+      $id("beamdot").style.left = (Math.abs(Math.sin(p * 500)) * (bw - 8)) + "px";
+    }
+    // viewer mirror
+    const vOn = vIn > .5;
+    if (cache.vOn !== vOn) {
+      cache.vOn = vOn;
+      $id("vmirror").innerHTML = vOn
+        ? '<div class="vrowm"><b class="t">THEM 1</b><span>' + ROWTEXT[0] + '</span></div>'
+        + '<div class="vrowm"><b class="y">YOU</b><span>' + ROWTEXT[1] + '</span></div>'
+        + '<div class="vrowm"><b class="t">THEM 2</b><span>' + ROWTEXT[2] + '</span></div>'
+        : "";
+    }
+
+    // ---------- camera ----------
+    let shot = { x: 0, y: 0, s: 1 };
+    const zoomTo = (target, a, b, back, sc) => {
+      const f = zoof(seg(p, a, a + .02));
+      const out = back ? zoof(seg(p, b, b + .02)) : 0;
+      const k = camShot(target, sc);
+      return { x: k.x * f * (1 - out), y: k.y * f * (1 - out), s: lerp(1, k.s, f * (1 - out)) };
+    };
+    if (p >= M.talk0 - .01 && p < M.zoomHdr) shot = zoomTo(G.demo, M.talk0 - .01, M.zoomHdr - .02, true, 1.5);
+    else if (p >= M.zoomHdr && p < M.hotkey - .005) shot = zoomTo(G.live, M.zoomHdr, M.hotkey - .025, true, 2.6);
+    else if (p >= M.hotkey - .005 && p < M.curToStop) shot = zoomTo(G.copilot, M.hotkey - .005, M.curToStop - .02, true, 1.55);
+    cam.style.transform = "translate3d(" + shot.x + "px," + shot.y + "px,0) scale(" + shot.s + ")";
+
+    // ---------- cursor ----------
+    let cx = null, cy = null, curOn = false;
+    for (let i = 0; i < PATH.length - 1; i++) {
+      const A = PATH[i], B = PATH[i + 1];
+      if (p >= A.t && p <= B.t) {
+        const a = G[A.at] || G.panel, b = G[B.at] || G.panel;
+        const f = ease(seg(p, A.t, B.t));
+        cx = lerp(a.x, b.x, f); cy = lerp(a.y, b.y, f); curOn = true;
+        break;
+      }
+    }
+    if (curOn && p > 0.008 && p < M.libOut) {
+      cur.style.opacity = "1";
+      cur.style.transform = "translate(" + (cx - 3) + "px," + (cy - 2) + "px)";
+    } else cur.style.opacity = "0";
+    // click ripples
+    for (const w of PATH) {
+      if (w.click && p >= w.click && p < w.click + .01) {
+        if (lastClickKey !== w.at + w.click) {
+          lastClickKey = w.at + w.click;
+          cur.classList.remove("click"); void cur.offsetWidth; cur.classList.add("click");
+        }
+      }
+    }
+
+    // ---------- captions ----------
+    let ci = 0;
+    for (let i = 0; i < CAPMARKS.length; i++) if (p >= CAPMARKS[i]) ci = i;
+    caps.forEach((c, i) => c.classList.toggle("on", i === ci));
+    setTxt("stepnum", String(ci + 1).padStart(2, "0") + " / " + String(caps.length).padStart(2, "0"));
+  }
 
   function frame(t) {
     if (lenis) lenis.raf(t);
     const dt = Math.min(50, t - last); last = t;
     const y = yNow || scrollY;
-    prog.style.transform = `scaleX(${y / Math.max(1, document.body.scrollHeight - innerHeight)})`;
-
+    prog.style.transform = "scaleX(" + (y / Math.max(1, document.body.scrollHeight - innerHeight)) + ")";
     if (!reduced) {
       if (marq) {
         marqX -= (0.05 + Math.min(3, Math.abs(velocity) * 0.09)) * dt;
         const half = marq.scrollWidth / 2;
         if (-marqX > half) marqX += half;
-        marq.style.transform = `translate3d(${marqX}px,0,0)`;
+        marq.style.transform = "translate3d(" + marqX + "px,0,0)";
       }
       if (wordsEl) {
         const r = wordsEl.getBoundingClientRect();
-        const p = Math.min(1, Math.max(0, (innerHeight * 0.85 - r.top) / (r.height + innerHeight * 0.3)));
-        const lit = Math.floor(p * words.length * 1.15);
+        const wp = Math.min(1, Math.max(0, (innerHeight * 0.85 - r.top) / (r.height + innerHeight * 0.3)));
+        const lit = Math.floor(wp * words.length * 1.15);
         words.forEach((w, i) => w.classList.toggle("lit", i < lit));
       }
-      if (tourOn && shots.length) {
+      if (tourOn) {
         const range = tour.offsetHeight - innerHeight;
-        const p = Math.min(1, Math.max(0, (y - tour.offsetTop) / Math.max(1, range)));
-        const segs = shots.length - 1;
-        const idx = Math.min(segs - 1, Math.floor(p * segs));
-        const f = p * segs - idx;
-        // first 32% of each segment travels (zoof), the rest holds to explain
-        const e = zoof(Math.min(1, f / 0.32));
-        const A = shots[idx], B = shots[idx + 1];
-        const tx = lerp(A.x, B.x, e), ty = lerp(A.y, B.y, e), ts = lerp(A.s, B.s, e);
-        panelbox.style.transform = `translate3d(${tx}px, ${ty}px, 0) scale(${ts})`;
-        const capIdx = f > 0.16 ? idx + 1 : idx;
-        caps.forEach((c, i) => c.classList.toggle("on", i === capIdx));
-        if (stepnum) stepnum.textContent = String(capIdx + 1).padStart(2, "0") + " / " + String(caps.length).padStart(2, "0");
-        // scroll drives the copilot demo: shot 4 = regular answer, shot 5 = STAR
-        if (capIdx === 5) setCopilotMode("star", true);
-        else if (capIdx === 4) setCopilotMode("regular", true);
-        else copilotPinned = false;
+        film(Math.min(1, Math.max(0, (y - tour.offsetTop) / Math.max(1, range))));
       }
     }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  if (reduced) words.forEach((w) => w.classList.add("lit"));
-
-  /* copilot demo: regular vs STAR answers */
-  let copilotPinned = false;
-  function setCopilotMode(mode, pin) {
-    if (pin) copilotPinned = true;
-    document.getElementById("ans-reg")?.classList.toggle("on", mode === "regular");
-    document.getElementById("ans-star")?.classList.toggle("on", mode === "star");
-    document.getElementById("chip-last")?.classList.toggle("hot", mode === "regular");
-    document.getElementById("chip-star")?.classList.toggle("hot", mode === "star");
-  }
-  let cycleStar = false;
-  setInterval(() => {
-    if (copilotPinned) return; // the scroll tour owns the demo right now
-    cycleStar = !cycleStar;
-    setCopilotMode(cycleStar ? "star" : "regular", false);
-  }, 4000);
-
-  /* live transcript demo — app-faithful */
-  const script = [
-    { who: "them", label: "THEM 1", text: "Walk me through how the rollout would work for a team like ours." },
-    { who: "you", label: "YOU", text: "Start with the pilot group — the March numbers make the case for us." },
-    { who: "them", label: "THEM 2", text: "And the migration risk? That's my main concern, honestly." },
-    { who: "you", label: "YOU", text: "Fair. We run the old system in parallel for two weeks — nobody loses a day." },
-    { who: "them", label: "THEM 1", text: "Okay. Send the timeline after this and let's get the pilot moving." },
-  ];
-  const host = document.getElementById("demo");
-  function addRow(l, settled) {
-    const row = document.createElement("div");
-    row.className = "trow";
-    row.innerHTML = `<span class="ttag ${l.who}">${l.label}</span><span class="txt${settled ? "" : " ghost"}"></span>`;
-    host.appendChild(row);
-    requestAnimationFrame(() => row.classList.add("show"));
-    return row;
-  }
-  script.slice(0, 2).forEach((l) => { addRow(l, true).querySelector(".txt").textContent = l.text; });
   if (reduced) {
-    script.slice(2).forEach((l) => { addRow(l, true).querySelector(".txt").textContent = l.text; });
-  } else {
-    let i = 2;
-    (function play() {
-      if (i >= script.length) {
-        setTimeout(() => { host.innerHTML = ""; script.slice(0, 2).forEach((l) => { addRow(l, true).querySelector(".txt").textContent = l.text; }); i = 2; play(); }, 4200);
-        return;
-      }
-      const l = script[i], row = addRow(l, false), txt = row.querySelector(".txt");
-      txt.insertAdjacentHTML("afterend", '<span class="caret"></span>');
-      const ws = l.text.split(" "); let w = 0;
-      const iv = setInterval(() => {
-        w++; txt.textContent = ws.slice(0, w).join(" ");
-        if (w >= ws.length) {
-          clearInterval(iv);
-          setTimeout(() => { row.querySelector(".caret")?.remove(); txt.classList.remove("ghost"); i++; setTimeout(play, 460); }, 320);
-        }
-      }, 105);
-    })();
+    words.forEach((w) => w.classList.add("lit"));
+    // static everything for reduced motion: show the finished meeting
+    rows.forEach((r, i) => { if (i < 3) { r.classList.add("vis"); r.querySelector(".txt").textContent = ROWTEXT[i]; } });
+    document.getElementById("ans-reg")?.classList.add("on");
+    const ar = document.getElementById("ans-reg"); if (ar) ar.textContent = REG;
   }
 })();
 </script>
