@@ -3,964 +3,490 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>UDITO — Hear everything. Keep everything.</title>
-<meta name="description" content="Live, word-by-word meeting transcription for macOS. Both voices, half a second behind reality — stored on your Mac and nowhere else.">
-<meta property="og:title" content="UDITO — Hear everything. Keep everything.">
+<title>UDITO — Hear everything.</title>
+<meta name="description" content="Live, word-by-word meeting transcription for macOS. Saved on your Mac. Nowhere else.">
+<meta property="og:title" content="UDITO — Hear everything.">
 <meta property="og:description" content="Live meeting transcription for macOS. Your words never live on anyone's servers.">
 <meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,700;14..32,800;14..32,900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,400;14..32,500;14..32,600;14..32,800;14..32,900&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #060709;
-    --panel: rgba(255,255,255,.03);
-    --panel-2: rgba(255,255,255,.06);
-    --line: rgba(255,255,255,.08);
-    --line-2: rgba(255,255,255,.15);
-    --txt: #f4f4f5;
-    --txt-2: #9ca3af;
-    --txt-3: #52525b;
-    --mint: #34d399;
-    --cyan: #5ac8fa;
-    --orange: #ff9f0a;
+    --black: #050505;
+    --white: #fafafa;
+    --g1: #191919;   /* borders on black */
+    --g2: #4d4d4d;   /* muted text on black */
+    --g3: #8a8a8a;   /* secondary text */
+    --wline: #e3e3e3; /* borders on white */
     --font: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
     --mono: "JetBrains Mono", ui-monospace, monospace;
+    --ease: cubic-bezier(.19, 1, .22, 1);
   }
   * { box-sizing: border-box; margin: 0; padding: 0; }
-  html { background: var(--bg); }
+  html { background: var(--black); }
   html.lenis { height: auto; }
   .lenis.lenis-smooth { scroll-behavior: auto !important; }
-  body {
-    background: transparent; color: var(--txt); font-family: var(--font);
-    font-size: 16px; line-height: 1.6; -webkit-font-smoothing: antialiased;
-    overflow-x: clip;
-  }
-  /* The 3D universe lives behind everything */
-  #gl { position: fixed; inset: 0; z-index: -1; display: block; }
+  body { background: var(--black); color: var(--white); font-family: var(--font); font-size: 16px; line-height: 1.55; -webkit-font-smoothing: antialiased; overflow-x: clip; }
   a { color: inherit; text-decoration: none; }
-  ::selection { background: rgba(52,211,153,.3); }
-  :focus-visible { outline: 2px solid var(--mint); outline-offset: 3px; border-radius: 4px; }
-  .wrap { max-width: 1200px; margin: 0 auto; padding: 0 clamp(20px, 4vw, 48px); position: relative; }
-  .mono { font-family: var(--mono); }
+  ::selection { background: var(--white); color: var(--black); }
+  :focus-visible { outline: 2px solid currentColor; outline-offset: 4px; }
+  .wrap { max-width: 1400px; margin: 0 auto; padding: 0 clamp(20px, 4vw, 64px); }
+  .mono { font-family: var(--mono); font-size: 11px; letter-spacing: .22em; text-transform: uppercase; }
 
-  /* progress bar */
-  #progress { position: fixed; top: 0; left: 0; height: 2px; width: 100%; z-index: 60; transform-origin: 0 50%; transform: scaleX(0);
-    background: linear-gradient(90deg, var(--mint), var(--cyan)); }
+  /* progress */
+  #progress { position: fixed; top: 0; left: 0; height: 2px; width: 100%; z-index: 90; transform-origin: 0 50%; transform: scaleX(0); background: var(--white); }
 
-  /* grain */
-  body::after {
-    content: ""; position: fixed; inset: -60%; z-index: 5; pointer-events: none; opacity: .035;
-    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-    animation: grain 8s steps(6) infinite;
-  }
-  @keyframes grain { 0%,100%{transform:translate(0,0)} 25%{transform:translate(-3%,2%)} 50%{transform:translate(2%,-3%)} 75%{transform:translate(-2%,-2%)} }
+  /* ============ NAV ============ */
+  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 80; mix-blend-mode: difference; }
+  .nav-inner { display: flex; align-items: center; justify-content: space-between; height: 74px; }
+  .logo { font-weight: 900; letter-spacing: .14em; font-size: 15px; color: #fff; }
+  .nav-right { display: flex; align-items: center; gap: 26px; }
+  .nav-right a { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: #fff; opacity: .7; transition: opacity .25s; }
+  .nav-right a:hover { opacity: 1; }
 
-  /* ===== NAV ===== */
-  nav { position: fixed; top: 0; left: 0; right: 0; z-index: 50; border-bottom: 1px solid transparent; transition: background .3s, border-color .3s; }
-  nav.scrolled { background: rgba(6,7,9,.7); backdrop-filter: blur(18px); -webkit-backdrop-filter: blur(18px); border-color: var(--line); }
-  .nav-inner { display: flex; align-items: center; gap: 26px; height: 62px; }
-  .logo { display: flex; align-items: center; gap: 9px; font-weight: 800; letter-spacing: .1em; font-size: 15px; }
-  .logo svg { width: 21px; height: 21px; }
-  .nav-links { display: flex; gap: 2px; margin-left: auto; }
-  .nav-links a { font-size: 13.5px; color: var(--txt-2); padding: 7px 12px; border-radius: 8px; transition: color .2s, background .2s; }
-  .nav-links a:hover { color: var(--txt); background: var(--panel-2); }
-  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 8px; cursor: pointer;
-    padding: 11px 20px; border-radius: 12px; font-weight: 600; font-size: 14px; line-height: 1;
-    border: 1px solid transparent; transition: background .25s, box-shadow .25s, border-color .25s; min-height: 42px; white-space: nowrap;
-    will-change: transform; }
-  .btn-solid { background: #fff; color: #09090b; }
-  .btn-solid:hover { background: #d8f8e8; box-shadow: 0 0 36px rgba(52,211,153,.3); }
-  .btn-mint { background: var(--mint); color: #042818; }
-  .btn-mint:hover { box-shadow: 0 0 44px rgba(52,211,153,.45); }
-  .btn-line { border-color: var(--line-2); color: var(--txt); }
-  .btn-line:hover { background: var(--panel-2); }
-  nav .btn { min-height: 36px; padding: 8px 15px; font-size: 13px; border-radius: 10px; }
+  .btn { display: inline-flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer;
+    padding: 16px 30px; border-radius: 999px; font-weight: 600; font-size: 14px; line-height: 1;
+    border: 1px solid var(--white); transition: background .3s var(--ease), color .3s var(--ease); min-height: 48px; white-space: nowrap; will-change: transform; }
+  .btn-solid { background: var(--white); color: var(--black); }
+  .btn-solid:hover { background: transparent; color: var(--white); }
+  .btn-ghost { background: transparent; color: var(--white); }
+  .btn-ghost:hover { background: var(--white); color: var(--black); }
+  .on-white .btn { border-color: var(--black); }
+  .on-white .btn-solid { background: var(--black); color: var(--white); }
+  .on-white .btn-solid:hover { background: transparent; color: var(--black); }
 
-  /* ===== HERO ===== */
-  .hero { min-height: 100vh; position: relative; display: flex; flex-direction: column; justify-content: center; text-align: center; padding: 120px 0 0; overflow: clip; }
-  .announce { display: inline-flex; align-items: center; gap: 10px; margin: 0 auto 36px; font-size: 12.5px; font-weight: 500;
-    color: var(--txt-2); border: 1px solid var(--line); border-radius: 999px; padding: 7px 9px 7px 15px; background: rgba(6,7,9,.5); backdrop-filter: blur(8px); }
-  .announce .chip { font-family: var(--mono); font-size: 10.5px; font-weight: 700; color: #042818; background: var(--mint); border-radius: 999px; padding: 3px 9px; letter-spacing: .05em; }
-  h1 { font-size: clamp(56px, 9.5vw, 128px); font-weight: 900; letter-spacing: -.05em; line-height: .94; }
-  h1 .ln { display: block; overflow: hidden; padding-bottom: .06em; }
-  h1 .ch { display: inline-block; transform: translateY(115%); will-change: transform; }
-  h1 .dim .ch { color: transparent; -webkit-text-stroke: 1.5px rgba(244,244,245,.34); }
-  .hero .sub { margin: 34px auto 40px; max-width: 58ch; font-size: clamp(16px, 1.6vw, 19px); color: var(--txt-2); }
-  .hero .sub b { color: var(--txt); font-weight: 600; }
-  .cta-row { display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
-  .hero .meta { margin-top: 24px; font-family: var(--mono); font-size: 11px; letter-spacing: .12em; color: var(--txt-3); text-transform: uppercase; }
-  .scrollcue { margin: 60px auto 30px; width: 22px; height: 34px; border: 1.5px solid var(--line-2); border-radius: 12px; position: relative; }
-  .scrollcue::after { content: ""; position: absolute; left: 50%; top: 7px; width: 3px; height: 7px; margin-left: -1.5px; border-radius: 2px; background: var(--mint); animation: cue 1.8s infinite; }
-  @keyframes cue { 0%{opacity:0;transform:translateY(0)} 30%{opacity:1} 100%{opacity:0;transform:translateY(12px)} }
+  /* ============ TYPE MACHINERY ============ */
+  .ln { display: block; overflow: hidden; }
+  .ln > span { display: inline-block; transform: translateY(112%); transition: transform 1.1s var(--ease); transition-delay: var(--d, 0s); will-change: transform; }
+  .ln.in > span { transform: translateY(0); }
+  [data-fade] { opacity: 0; transform: translateY(24px); transition: opacity .9s var(--ease), transform .9s var(--ease); transition-delay: var(--d, 0s); }
+  [data-fade].in { opacity: 1; transform: none; }
 
-  /* ===== PRODUCT WINDOW (scrub scale) ===== */
-  .stagewrap { padding: 4vh 0 0; }
-  .stage { max-width: 1040px; margin: 0 auto; position: relative; will-change: transform; }
-  .glowline { position: absolute; top: -1px; left: 12%; right: 12%; height: 1px; z-index: 2;
-    background: linear-gradient(90deg, transparent, rgba(52,211,153,.9), rgba(90,200,250,.7), transparent); }
-  .window { border-radius: 16px; overflow: hidden; background: linear-gradient(180deg, #101116, #0a0b0f);
-    border: 1px solid var(--line-2); box-shadow: 0 0 0 1px rgba(0,0,0,.6), 0 60px 120px rgba(0,0,0,.7); }
-  .titlebar { display: flex; align-items: center; gap: 7px; padding: 12px 15px; border-bottom: 1px solid var(--line); background: rgba(255,255,255,.02); }
-  .tl { width: 11px; height: 11px; border-radius: 50%; }
-  .tl.r{background:#ff5f57}.tl.y{background:#febc2e}.tl.g{background:#28c840}
-  .titlebar .name { margin-left: 8px; font-size: 11.5px; color: var(--txt-3); font-family: var(--mono); }
-  .rec { margin-left: auto; display: flex; align-items: center; gap: 6px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .12em; color: #f87171; }
-  .rec i { width: 7px; height: 7px; border-radius: 50%; background: #ef4444; animation: blink 1.4s infinite; }
-  @keyframes blink { 50% { opacity: .3; } }
-  .app-body { display: grid; grid-template-columns: 1.4fr 1fr; min-height: 400px; text-align: left; }
-  .pane-l { padding: 20px; border-right: 1px solid var(--line); display: flex; flex-direction: column; gap: 14px; }
-  .trow { display: flex; gap: 10px; align-items: flex-start; opacity: 0; transform: translateY(6px); transition: opacity .4s, transform .4s; }
+  /* ============ HERO ============ */
+  .hero { min-height: 100svh; display: flex; flex-direction: column; justify-content: flex-end; padding-bottom: 7vh; position: relative; }
+  .hero .top { position: absolute; top: 100px; left: 0; right: 0; display: flex; justify-content: space-between; color: var(--g3); }
+  h1 { font-size: clamp(64px, 13.5vw, 210px); font-weight: 900; letter-spacing: -.045em; line-height: .88; text-transform: uppercase; }
+  .hero .row { display: flex; align-items: flex-end; justify-content: space-between; gap: 40px; margin-top: 6vh; flex-wrap: wrap; }
+  .hero .sub { max-width: 34ch; font-size: 17px; color: var(--g3); }
+  .hero .sub b { color: var(--white); font-weight: 600; }
+  .hero .cta { display: flex; gap: 14px; flex-wrap: wrap; }
+
+  /* ============ MARQUEE ============ */
+  .marquee { border-top: 1px solid var(--g1); border-bottom: 1px solid var(--g1); overflow: hidden; padding: 26px 0; }
+  .marquee-track { display: flex; gap: 70px; width: max-content; will-change: transform; }
+  .marquee span { font-size: clamp(20px, 3vw, 34px); font-weight: 900; letter-spacing: -.02em; white-space: nowrap; text-transform: uppercase;
+    color: transparent; -webkit-text-stroke: 1px var(--g2); }
+  .marquee span.solid { color: var(--white); -webkit-text-stroke: 0; }
+
+  /* ============ INTRO LINES ============ */
+  .intro { padding: 24vh 0; }
+  .intro p { font-size: clamp(40px, 7.2vw, 110px); font-weight: 900; letter-spacing: -.04em; line-height: 1.02; text-transform: uppercase; }
+  .intro .dim > span { color: var(--g2); }
+  .intro .last { margin-top: 2vh; }
+
+  /* ============ PRODUCT ============ */
+  .product { padding: 10vh 0 16vh; }
+  .scene-head { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid var(--g1); padding-top: 20px; margin-bottom: 7vh; color: var(--g3); }
+  .window { max-width: 1000px; margin: 0 auto; border: 1px solid var(--g1); border-radius: 14px; overflow: hidden; background: #0a0a0a; will-change: transform; }
+  .titlebar { display: flex; align-items: center; gap: 7px; padding: 13px 16px; border-bottom: 1px solid var(--g1); }
+  .tl { width: 10px; height: 10px; border-radius: 50%; background: #2b2b2b; }
+  .titlebar .name { margin-left: 10px; font-family: var(--mono); font-size: 11px; color: var(--g2); }
+  .rec { margin-left: auto; display: flex; align-items: center; gap: 7px; font-family: var(--mono); font-size: 10px; letter-spacing: .18em; color: var(--white); }
+  .rec i { width: 7px; height: 7px; border-radius: 50%; background: var(--white); animation: blink 1.5s infinite; }
+  @keyframes blink { 50% { opacity: .25; } }
+  .demo { padding: 26px 24px; min-height: 320px; display: flex; flex-direction: column; gap: 16px; }
+  .trow { display: flex; gap: 12px; align-items: flex-start; opacity: 0; transform: translateY(6px); transition: opacity .4s, transform .4s; }
   .trow.show { opacity: 1; transform: none; }
-  .ttag { flex-shrink: 0; font-size: 10px; font-weight: 700; font-family: var(--mono); padding: 3px 8px; border-radius: 5px; margin-top: 2px; }
-  .ttag.you { color: var(--cyan); background: rgba(90,200,250,.12); }
-  .ttag.them { color: var(--orange); background: rgba(255,159,10,.12); }
-  .trow .txt { font-size: 13.5px; }
-  .trow .txt.ghost { color: var(--txt-2); }
-  .caret { display: inline-block; width: 6px; height: 13px; background: var(--txt-2); vertical-align: -2px; margin-left: 3px; animation: blink 1s infinite; }
-  .pane-r { padding: 20px; display: flex; flex-direction: column; gap: 12px; background: rgba(255,255,255,.012); }
-  .pane-r .label { font-family: var(--mono); font-size: 10px; letter-spacing: .16em; color: var(--txt-3); text-transform: uppercase; }
-  .qa { border: 1px solid var(--line); background: var(--panel); border-radius: 12px; padding: 13px 15px; }
-  .qa .q { font-size: 11.5px; color: var(--txt-2); font-weight: 600; margin-bottom: 8px; display: flex; gap: 7px; align-items: center; }
-  .qa .q svg { width: 12px; height: 12px; color: var(--mint); }
-  .qa .a { font-size: 13px; }
-  .hint { margin-top: auto; display: flex; gap: 8px; }
-  .kbd { font-family: var(--mono); font-size: 10.5px; color: var(--txt-2); border: 1px solid var(--line-2); border-bottom-width: 2px; border-radius: 6px; padding: 3px 8px; background: var(--panel); }
-  .float { position: absolute; z-index: 3; border-radius: 14px; border: 1px solid var(--line-2); background: rgba(14,15,20,.9); backdrop-filter: blur(14px); box-shadow: 0 30px 70px rgba(0,0,0,.6); }
-  .float.viewers { top: -24px; right: -16px; padding: 11px 17px; display: flex; align-items: center; gap: 9px; font-size: 12.5px; font-weight: 600; }
-  .float.viewers svg { width: 15px; height: 15px; color: var(--mint); }
-  .float.guest { bottom: -38px; left: -28px; padding: 15px 17px; width: 195px; text-align: center; transform: rotate(-2deg); }
-  .float.guest h5 { font-size: 10px; font-family: var(--mono); letter-spacing: .12em; color: var(--txt-2); text-transform: uppercase; font-weight: 500; }
-  .digits { display: flex; gap: 4px; justify-content: center; margin: 11px 0; }
-  .digits b { width: 23px; height: 31px; display: grid; place-items: center; font-family: var(--mono); font-size: 14px; background: var(--panel-2); border: 1px solid var(--line-2); border-radius: 6px; animation: digit 3s infinite; }
-  .digits b:nth-child(2){animation-delay:.12s}.digits b:nth-child(3){animation-delay:.24s}
-  .digits b:nth-child(4){animation-delay:.36s}.digits b:nth-child(5){animation-delay:.48s}.digits b:nth-child(6){animation-delay:.6s}
-  @keyframes digit { 0%,20%,100% { border-color: var(--line-2); } 10% { border-color: var(--mint); box-shadow: 0 0 14px rgba(52,211,153,.4); } }
-  .float.guest .ok { font-size: 11px; font-weight: 700; color: var(--mint); }
+  .ttag { flex-shrink: 0; font-family: var(--mono); font-size: 10px; letter-spacing: .06em; padding: 4px 10px; border-radius: 999px; margin-top: 2px; }
+  .ttag.you { background: var(--white); color: var(--black); }
+  .ttag.them { border: 1px solid var(--g2); color: var(--g3); }
+  .trow .txt { font-size: 15px; }
+  .trow .txt.ghost { color: var(--g3); }
+  .caret { display: inline-block; width: 7px; height: 15px; background: var(--g3); vertical-align: -2px; margin-left: 3px; animation: blink 1s infinite; }
+  .product .caption { text-align: center; margin-top: 4vh; color: var(--g3); font-size: 14px; }
+  .product .caption b { color: var(--white); font-weight: 600; }
 
-  /* ===== MARQUEE ===== */
-  .marquee { margin-top: 110px; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); overflow: hidden; padding: 22px 0;
-    -webkit-mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent);
-            mask-image: linear-gradient(90deg, transparent, #000 10%, #000 90%, transparent); }
-  .marquee-track { display: flex; gap: 64px; width: max-content; will-change: transform; }
-  .marquee span { font-size: clamp(18px, 2.4vw, 28px); font-weight: 800; letter-spacing: -.02em; color: var(--txt-3); white-space: nowrap; text-transform: uppercase; }
-  .marquee span b { color: var(--txt); font-weight: 800; }
-  .marquee span i { font-style: normal; color: var(--mint); margin: 0 18px; }
+  /* ============ FEATURES (WHITE) ============ */
+  .features { background: var(--white); color: var(--black); padding: 16vh 0 18vh; }
+  .features .scene-head { border-top-color: var(--wline); color: #777; }
+  .frow { display: grid; grid-template-columns: 90px 1fr 1fr; gap: 24px; align-items: baseline;
+    border-bottom: 1px solid var(--wline); padding: 4.5vh 8px; position: relative; overflow: hidden; cursor: default; }
+  .frow:first-of-type { border-top: 1px solid var(--wline); }
+  .frow .n { font-family: var(--mono); font-size: 12px; color: #999; }
+  .frow h3 { font-size: clamp(26px, 3.8vw, 54px); font-weight: 900; letter-spacing: -.03em; line-height: 1; text-transform: uppercase; }
+  .frow p { font-size: 15.5px; color: #555; max-width: 42ch; justify-self: end; align-self: center; }
+  .frow::after { content: ""; position: absolute; inset: 0; background: var(--black); transform: scaleY(0); transform-origin: bottom; transition: transform .45s var(--ease); z-index: 0; }
+  .frow:hover::after { transform: scaleY(1); }
+  .frow > * { position: relative; z-index: 1; transition: color .35s; }
+  .frow:hover .n { color: #888; }
+  .frow:hover h3 { color: var(--white); }
+  .frow:hover p { color: #aaa; }
 
-  /* ===== SECTION FURNITURE ===== */
-  section { padding: 150px 0 0; }
-  .idx { display: flex; align-items: baseline; gap: 16px; border-top: 1px solid var(--line); padding-top: 18px; margin-bottom: 26px; }
-  .idx .n { font-family: var(--mono); font-size: 12px; color: var(--mint); }
-  .idx .t { font-family: var(--mono); font-size: 11.5px; letter-spacing: .2em; text-transform: uppercase; color: var(--txt-2); }
-  h2 { font-size: clamp(36px, 5.4vw, 64px); font-weight: 800; letter-spacing: -.04em; line-height: 1.02; }
-  .lead { color: var(--txt-2); font-size: 17px; margin-top: 18px; max-width: 58ch; }
-  [data-reveal] { opacity: 0; transform: translateY(30px); transition: opacity .8s cubic-bezier(.16,1,.3,1), transform .8s cubic-bezier(.16,1,.3,1); transition-delay: var(--d, 0s); }
-  [data-reveal].in { opacity: 1; transform: none; }
+  /* ============ CUSTODY ============ */
+  .custody { padding: 26vh 0; }
+  .custody p { font-size: clamp(36px, 6vw, 92px); font-weight: 900; letter-spacing: -.04em; line-height: 1.04; max-width: 1200px; text-transform: uppercase; }
+  .custody .w { opacity: .12; transition: opacity .3s; }
+  .custody .w.lit { opacity: 1; }
+  .custody .strike { position: relative; }
+  .custody .strike.lit::after { content: ""; position: absolute; left: -1%; right: -1%; top: 52%; height: .055em; background: var(--white); transform: rotate(-1.2deg); }
+  .custody .final-line .w.lit { color: var(--white); }
 
-  /* ===== BENTO ===== */
-  .bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 14px; margin-top: 56px; }
-  .cell { position: relative; border-radius: 18px; padding: 28px; overflow: hidden; background: var(--panel); border: 1px solid var(--line);
-    min-height: 240px; display: flex; flex-direction: column; transition: border-color .3s; }
-  .cell:hover { border-color: rgba(52,211,153,.35); }
-  .cell::before { content: ""; position: absolute; inset: 0; opacity: 0; transition: opacity .4s; pointer-events: none;
-    background: radial-gradient(360px 200px at var(--mx,50%) var(--my,0%), rgba(52,211,153,.09), transparent 70%); }
-  .cell:hover::before { opacity: 1; }
-  .cell h3 { font-size: 17px; font-weight: 700; letter-spacing: -.01em; }
-  .cell p { font-size: 13.5px; color: var(--txt-2); margin-top: 8px; }
-  .cell .art { margin-top: auto; padding-top: 24px; }
-  .c-3 { grid-column: span 3; } .c-2 { grid-column: span 2; } .c-4 { grid-column: span 4; }
-  .eq-row { display: flex; align-items: center; gap: 10px; margin-bottom: 9px; }
-  .eq { display: flex; gap: 2.5px; align-items: flex-end; height: 18px; }
-  .eq i { width: 3px; border-radius: 2px; animation: eq 1.1s ease-in-out infinite; }
-  .eq.cy i { background: var(--cyan); } .eq.or i { background: var(--orange); }
-  .eq i:nth-child(2){animation-delay:.1s}.eq i:nth-child(3){animation-delay:.2s}.eq i:nth-child(4){animation-delay:.3s}
-  .eq i:nth-child(5){animation-delay:.4s}.eq i:nth-child(6){animation-delay:.5s}.eq i:nth-child(7){animation-delay:.25s}
-  @keyframes eq { 0%,100%{height:4px} 50%{height:18px} }
-  .eq-row .who { font-family: var(--mono); font-size: 10.5px; color: var(--txt-2); width: 48px; }
-  .eq-row .fill { flex: 1; height: 1px; background: var(--line); }
-  .linkpill { display: flex; align-items: center; gap: 9px; border: 1px solid var(--line-2); background: rgba(0,0,0,.3); border-radius: 10px; padding: 10px 13px; font-family: var(--mono); font-size: 11px; color: var(--txt-2); }
-  .linkpill svg { width: 13px; height: 13px; color: var(--mint); flex-shrink: 0; }
-  .linkpill .eyes { margin-left: auto; color: var(--mint); font-weight: 700; display: flex; gap: 5px; align-items: center; }
-  .codeart { display: flex; gap: 5px; }
-  .codeart b { flex: 1; height: 42px; display: grid; place-items: center; font-family: var(--mono); font-size: 17px; background: rgba(0,0,0,.3); border: 1px solid var(--line-2); border-radius: 9px; animation: digit 3.4s infinite; }
-  .codeart b:nth-child(2){animation-delay:.15s}.codeart b:nth-child(3){animation-delay:.3s}
-  .codeart b:nth-child(4){animation-delay:.45s}.codeart b:nth-child(5){animation-delay:.6s}.codeart b:nth-child(6){animation-delay:.75s}
-  .chat { display: flex; flex-direction: column; gap: 8px; }
-  .bub { border-radius: 11px; padding: 10px 13px; font-size: 12px; max-width: 92%; }
-  .bub.q { align-self: flex-end; background: rgba(90,200,250,.1); color: var(--cyan); border: 1px solid rgba(90,200,250,.2); font-family: var(--mono); font-size: 11px; }
-  .bub.a { align-self: flex-start; background: rgba(0,0,0,.3); border: 1px solid var(--line-2); }
-  .shimmer { background: linear-gradient(90deg, var(--txt) 40%, var(--mint) 50%, var(--txt) 60%); background-size: 200% 100%; -webkit-background-clip: text; background-clip: text; color: transparent; animation: shim 2.4s linear infinite; }
-  @keyframes shim { to { background-position: -200% 0; } }
-  .ghostwin { border: 1px dashed var(--line-2); border-radius: 10px; padding: 13px; display: flex; align-items: center; gap: 10px; }
-  .ghostwin svg { width: 18px; height: 18px; color: var(--txt-3); flex-shrink: 0; }
-  .ghostwin code { font-family: var(--mono); font-size: 10.5px; color: var(--txt-3); }
-  .checks { display: flex; flex-direction: column; gap: 9px; }
-  .checks div { display: flex; gap: 9px; align-items: center; font-size: 12.5px; color: var(--txt-2); }
-  .checks svg { width: 14px; height: 14px; color: var(--mint); flex-shrink: 0; }
+  /* ============ DECK (sticky stack) ============ */
+  .decksec { padding: 10vh 0 14vh; }
+  .deck { display: flex; flex-direction: column; gap: 6vh; }
+  .card { position: sticky; border: 1px solid var(--g1); border-radius: 18px; background: #0a0a0a;
+    padding: clamp(30px, 5vw, 70px); min-height: 62vh; display: flex; flex-direction: column; justify-content: space-between; }
+  .card:nth-child(1) { top: 12vh; }
+  .card:nth-child(2) { top: 15vh; }
+  .card:nth-child(3) { top: 18vh; }
+  .card .idxrow { display: flex; justify-content: space-between; color: var(--g3); }
+  .card h3 { font-size: clamp(40px, 7vw, 110px); font-weight: 900; letter-spacing: -.04em; line-height: .95; text-transform: uppercase; }
+  .card .foot { display: flex; justify-content: space-between; align-items: flex-end; gap: 30px; flex-wrap: wrap; }
+  .card .foot p { color: var(--g3); font-size: 16px; max-width: 44ch; }
+  .card .foot p b { color: var(--white); font-weight: 600; }
+  .card .bignum { font-family: var(--mono); font-size: 13px; color: var(--g2); }
+  .card.invert { background: var(--white); color: var(--black); border-color: var(--white); }
+  .card.invert .idxrow, .card.invert .foot p, .card.invert .bignum { color: #666; }
+  .card.invert .foot p b { color: var(--black); }
 
-  /* ===== STATEMENT ===== */
-  .statement { padding: 26vh 0; }
-  .statement p { font-size: clamp(32px, 5.2vw, 64px); font-weight: 800; letter-spacing: -.04em; line-height: 1.1; max-width: 1050px; }
-  .statement .w { opacity: .13; transition: opacity .3s; }
-  .statement .w.lit { opacity: 1; }
-  .statement .mintw.lit { color: var(--mint); }
-  .statement .strike { position: relative; }
-  .statement .strike.lit::after { content: ""; position: absolute; left: -2%; right: -2%; top: 54%; height: .06em; background: #ef4444; transform: rotate(-1.5deg); }
+  /* ============ TABLE ============ */
+  .versus { padding: 14vh 0; }
+  .vtable { border-top: 1px solid var(--g1); }
+  .vrow { display: grid; grid-template-columns: 1fr repeat(4, minmax(70px, 130px)); gap: 10px; align-items: center;
+    border-bottom: 1px solid var(--g1); padding: 22px 8px; }
+  .vrow.head { color: var(--g3); font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; }
+  .vrow .cap { font-size: clamp(15px, 1.6vw, 19px); font-weight: 600; }
+  .vrow span { text-align: center; }
+  .vrow .y { color: var(--white); font-weight: 800; }
+  .vrow .n { color: var(--g2); }
+  .vrow .u { font-weight: 900; }
 
-  /* ===== HORIZONTAL PINNED (Live links) ===== */
-  .hscroll { height: 340vh; position: relative; }
-  .hsticky { position: sticky; top: 0; height: 100vh; overflow: hidden; display: flex; flex-direction: column; justify-content: center; }
-  .hhead { position: absolute; top: 90px; left: 0; right: 0; }
-  .htrack { display: flex; gap: 26px; padding: 0 6vw; will-change: transform; align-items: stretch; margin-top: 60px; }
-  .panel { flex: 0 0 min(640px, 78vw); border-radius: 22px; border: 1px solid var(--line); background: linear-gradient(180deg, rgba(255,255,255,.045), rgba(255,255,255,.015));
-    padding: clamp(28px, 4vw, 52px); position: relative; overflow: hidden; display: flex; flex-direction: column; min-height: 380px; }
-  .panel .big { position: absolute; right: 18px; top: -14px; font-family: var(--mono); font-weight: 700; font-size: clamp(90px, 12vw, 150px); color: rgba(255,255,255,.05); line-height: 1; }
-  .panel h3 { font-size: clamp(24px, 2.6vw, 34px); font-weight: 800; letter-spacing: -.03em; }
-  .panel p { color: var(--txt-2); font-size: 15.5px; margin-top: 12px; max-width: 44ch; }
-  .panel .art { margin-top: auto; padding-top: 30px; }
-  .panel .mono-tip { font-family: var(--mono); font-size: 11.5px; color: var(--mint); margin-top: 16px; }
-  .phone-mini { display: flex; align-items: center; gap: 16px; }
-  .phone-mini .dev { width: 120px; border-radius: 18px; border: 1px solid var(--line-2); background: rgba(0,0,0,.35); padding: 14px 10px; text-align: center; }
-  .phone-mini .dev .cam { width: 36px; height: 4px; border-radius: 2px; background: rgba(255,255,255,.15); margin: 0 auto 10px; }
-  .phone-mini .dev .mic { width: 34px; height: 34px; margin: 6px auto; border-radius: 50%; background: rgba(52,211,153,.15); display: grid; place-items: center; }
-  .phone-mini .dev .mic svg { width: 16px; height: 16px; color: var(--mint); }
-  .phone-mini .arrow { flex: 1; height: 1px; background: linear-gradient(90deg, var(--mint), transparent); position: relative; }
-  .phone-mini .arrow::after { content: ""; position: absolute; right: 40%; top: -3px; width: 7px; height: 7px; border-radius: 50%; background: var(--mint); animation: travel 2s linear infinite; }
-  @keyframes travel { from { right: 95%; opacity: 0 } 20% { opacity: 1 } to { right: 2%; opacity: 0 } }
-  .burn { font-family: var(--mono); font-size: 12px; color: var(--txt-2); border: 1px solid var(--line-2); border-radius: 10px; padding: 12px 14px; background: rgba(0,0,0,.3); overflow: hidden; position: relative; }
-  .burn b { color: #ef4444; }
+  /* ============ PRICING (WHITE) ============ */
+  .pricing { background: var(--white); color: var(--black); padding: 16vh 0 18vh; }
+  .pricing .scene-head { border-top-color: var(--wline); color: #777; }
+  .pgrid { display: grid; grid-template-columns: 1fr 1fr; gap: 0; border: 1px solid var(--wline); }
+  .pcol { padding: clamp(30px, 4vw, 60px); }
+  .pcol + .pcol { border-left: 1px solid var(--wline); }
+  .pcol .tier { font-family: var(--mono); font-size: 11px; letter-spacing: .2em; text-transform: uppercase; color: #999; }
+  .pcol .amt { font-size: clamp(56px, 7vw, 110px); font-weight: 900; letter-spacing: -.04em; line-height: 1; margin: 24px 0 6px; }
+  .pcol .per { color: #777; font-size: 14px; }
+  .pcol ul { list-style: none; margin: 36px 0 44px; display: flex; flex-direction: column; }
+  .pcol li { font-size: 15.5px; color: #444; padding: 13px 0; border-bottom: 1px solid var(--wline); }
+  .pcol li:first-child { border-top: 1px solid var(--wline); }
 
-  /* ===== TABLE / PRICING / FAQ (from v2, tightened) ===== */
-  .tablewrap { margin-top: 56px; overflow-x: auto; border-radius: 18px; border: 1px solid var(--line); }
-  table { width: 100%; min-width: 640px; border-collapse: collapse; background: rgba(0,0,0,.25); font-size: 14px; }
-  th, td { padding: 17px 20px; text-align: center; border-bottom: 1px solid var(--line); }
-  th { font-family: var(--mono); font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--txt-2); }
-  td:first-child, th:first-child { text-align: left; }
-  tr:last-child td { border-bottom: 0; }
-  .hl { background: rgba(52,211,153,.06); border-left: 1px solid rgba(52,211,153,.25); border-right: 1px solid rgba(52,211,153,.25); }
-  th.hl { color: var(--mint); }
-  .ok { color: var(--mint); font-weight: 700; } .na { color: var(--txt-3); }
-  .plans { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-top: 56px; max-width: 800px; }
-  .plan { border-radius: 18px; padding: 34px 32px; border: 1px solid var(--line); background: var(--panel); position: relative; }
-  .plan.pro { background: linear-gradient(180deg, rgba(52,211,153,.08), var(--panel) 60%); }
-  .plan.pro::before { content: ""; position: absolute; inset: -1px; border-radius: 19px; padding: 1px; z-index: -1;
-    background: linear-gradient(160deg, rgba(52,211,153,.8), rgba(90,200,250,.35), transparent 65%);
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0); -webkit-mask-composite: xor; mask-composite: exclude; }
-  .plan .tier { font-family: var(--mono); font-size: 11px; letter-spacing: .18em; text-transform: uppercase; color: var(--txt-2); }
-  .plan .amt { font-size: 48px; font-weight: 800; letter-spacing: -.03em; margin: 12px 0 2px; }
-  .plan .amt small { font-size: 14px; font-weight: 500; color: var(--txt-3); letter-spacing: 0; }
-  .plan ul { list-style: none; margin: 24px 0 30px; display: flex; flex-direction: column; gap: 12px; }
-  .plan li { display: flex; gap: 10px; font-size: 14px; color: var(--txt-2); }
-  .plan li svg { width: 15px; height: 15px; color: var(--mint); flex-shrink: 0; margin-top: 4px; }
-  .plan .tag { position: absolute; top: 20px; right: 20px; font-family: var(--mono); font-size: 10px; font-weight: 700; letter-spacing: .1em; color: #042818; background: var(--mint); padding: 4px 10px; border-radius: 999px; }
-  .faq { max-width: 800px; margin-top: 46px; }
-  details { border-bottom: 1px solid var(--line); }
-  summary { cursor: pointer; padding: 24px 4px; font-weight: 600; font-size: 16.5px; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 14px; transition: color .2s; }
-  summary:hover { color: var(--mint); }
+  /* ============ FAQ ============ */
+  .faqsec { padding: 16vh 0 8vh; }
+  details { border-bottom: 1px solid var(--g1); }
+  details:first-of-type { border-top: 1px solid var(--g1); }
+  summary { cursor: pointer; padding: 30px 4px; font-weight: 800; font-size: clamp(17px, 2vw, 24px); letter-spacing: -.01em; list-style: none; display: flex; justify-content: space-between; align-items: center; gap: 16px; }
   summary::-webkit-details-marker { display: none; }
-  summary::after { content: "+"; font-size: 22px; font-weight: 300; color: var(--txt-3); transition: transform .3s; }
+  summary::after { content: "+"; font-size: 26px; font-weight: 300; color: var(--g2); transition: transform .3s; }
   details[open] summary::after { transform: rotate(45deg); }
-  details p { padding: 0 4px 24px; color: var(--txt-2); font-size: 14.5px; max-width: 66ch; }
+  details p { padding: 0 4px 30px; color: var(--g3); font-size: 15px; max-width: 68ch; }
 
-  /* ===== FINAL ===== */
-  .final { margin-top: 170px; position: relative; border-top: 1px solid var(--line); padding: 150px 0 130px; text-align: center; overflow: hidden; }
-  .final::before { content: ""; position: absolute; left: 50%; top: -100px; width: 1000px; height: 560px; transform: translateX(-50%);
-    background: radial-gradient(closest-side, rgba(52,211,153,.16), transparent); pointer-events: none; }
-  .final h2 { font-size: clamp(44px, 7.4vw, 92px); }
-  .final .lead { margin: 22px auto 44px; }
-  .gatekeeper { margin-top: 20px; font-size: 12px; color: var(--txt-3); }
+  /* ============ FINAL ============ */
+  .final { padding: 26vh 0 20vh; text-align: center; }
+  .final h2 { font-size: clamp(48px, 10vw, 160px); font-weight: 900; letter-spacing: -.045em; line-height: .9; text-transform: uppercase; }
+  .final .cta { margin-top: 7vh; display: flex; gap: 14px; justify-content: center; flex-wrap: wrap; }
+  .final .note { margin-top: 26px; color: var(--g2); font-size: 13px; }
 
-  footer { border-top: 1px solid var(--line); padding: 60px 0 0; position: relative; overflow: hidden; }
-  .footgrid { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 36px; padding-bottom: 100px; }
-  .footgrid .col h5 { font-family: var(--mono); font-size: 10.5px; letter-spacing: .18em; text-transform: uppercase; color: var(--txt-3); margin-bottom: 16px; }
-  .footgrid .col a { display: block; font-size: 14px; color: var(--txt-2); padding: 5px 0; }
-  .footgrid .col a:hover { color: var(--txt); }
-  .footgrid .brand p { color: var(--txt-3); font-size: 13px; margin-top: 12px; max-width: 30ch; }
+  footer { border-top: 1px solid var(--g1); padding: 50px 0 0; overflow: hidden; }
+  .footrow { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 24px; color: var(--g3); font-size: 13.5px; padding-bottom: 10vh; }
+  .footrow .links { display: flex; gap: 28px; }
+  .footrow a:hover { color: var(--white); }
   .watermark { display: block; text-align: center; font-weight: 900; letter-spacing: -.02em;
-    font-size: clamp(100px, 19vw, 280px); line-height: .76; transform: translateY(20%);
-    color: transparent; -webkit-text-stroke: 1px rgba(255,255,255,.08); user-select: none; pointer-events: none; will-change: transform; }
+    font-size: clamp(110px, 21vw, 320px); line-height: .74; transform: translateY(22%);
+    color: transparent; -webkit-text-stroke: 1px #262626; user-select: none; pointer-events: none; }
 
-  @media (max-width: 920px) {
-    .nav-links { display: none; }
-    .app-body { grid-template-columns: 1fr; }
-    .pane-r { display: none; }
-    .c-3, .c-2, .c-4 { grid-column: span 6; }
-    .plans { grid-template-columns: 1fr; }
-    section { padding: 100px 0 0; }
-    .float.guest { left: 4px; bottom: -30px; }
-    .hscroll { height: auto; }
-    .hsticky { position: static; height: auto; padding: 0; display: block; }
-    .hhead { position: static; margin-bottom: 10px; }
-    .htrack { flex-direction: column; padding: 0; transform: none !important; margin-top: 30px; }
-    .panel { flex: 1 1 auto; min-height: 0; }
+  @media (max-width: 860px) {
+    .nav-right a.hide-m { display: none; }
+    .frow { grid-template-columns: 44px 1fr; }
+    .frow p { grid-column: 2; justify-self: start; margin-top: 8px; }
+    .pgrid { grid-template-columns: 1fr; }
+    .pcol + .pcol { border-left: 0; border-top: 1px solid var(--wline); }
+    .vrow { grid-template-columns: 1fr repeat(4, minmax(44px, 70px)); }
+    .card { min-height: 54vh; }
   }
   @media (prefers-reduced-motion: reduce) {
-    *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
-    [data-reveal], .trow { opacity: 1 !important; transform: none !important; }
-    h1 .ch { transform: none !important; }
-    .statement .w { opacity: 1; }
+    *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+    .ln > span { transform: none !important; }
+    [data-fade] { opacity: 1 !important; transform: none !important; }
+    .custody .w { opacity: 1; }
   }
 </style>
 </head>
 <body>
-<canvas id="gl" aria-hidden="true"></canvas>
 <div id="progress" aria-hidden="true"></div>
 
-<nav id="nav" aria-label="Main">
+<nav aria-label="Main">
   <div class="wrap nav-inner">
-    <a class="logo" href="#top" aria-label="UDITO home">
-      <svg viewBox="0 0 24 24" fill="none" stroke="var(--mint)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 10a6 6 0 1 1 12 0c0 4-3 4.5-3 8a3 3 0 0 1-6 0"/><path d="M9.5 10a2.5 2.5 0 0 1 5 0"/></svg>
-      UDITO
-    </a>
-    <div class="nav-links">
-      <a href="#product">Product</a>
-      <a href="#live">Live links</a>
-      <a href="#compare">Compare</a>
-      <a href="#pricing">Pricing</a>
-      <a href="#faq">FAQ</a>
+    <a class="logo" href="#top">UDITO</a>
+    <div class="nav-right">
+      <a href="#product" class="hide-m">Product</a>
+      <a href="#pricing" class="hide-m">Pricing</a>
+      <a href="/join">Join with a code</a>
+      <a href="/UDITO-beta.dmg" download style="opacity:1;font-weight:700">Download ↓</a>
     </div>
-    <a class="btn btn-line" href="/join">Join with a code</a>
-    <a class="btn btn-solid" href="/UDITO-beta.dmg" download>Download beta</a>
   </div>
 </nav>
 
-<header class="hero" id="top">
-  <div class="wrap">
-    <a class="announce" href="#pricing"><span class="chip">BETA</span> Free during beta — download below <span aria-hidden="true">→</span></a>
-    <h1 aria-label="Hear everything. Keep everything.">
-      <span class="ln" data-split>Hear everything.</span>
-      <span class="ln dim" data-split>Keep everything.</span>
-    </h1>
-    <p class="sub" data-reveal style="--d:.5s">UDITO turns every meeting into a <b>live, word-by-word transcript</b> on your Mac — both voices, half a second behind reality. Stored on your machine. <b>Nowhere else.</b></p>
-    <div class="cta-row" data-reveal style="--d:.62s">
-      <a class="btn btn-mint" href="/UDITO-beta.dmg" download data-magnet>Download for macOS — free</a>
-      <a class="btn btn-line" href="#product" data-magnet>See it work</a>
+<header class="hero wrap" id="top">
+  <div class="top mono">
+    <span>Live meeting transcription</span>
+    <span>macOS 14.4+</span>
+  </div>
+  <h1 aria-label="Hear everything.">
+    <span class="ln"><span style="--d:.1s">Hear</span></span>
+    <span class="ln"><span style="--d:.22s">every&shy;thing.</span></span>
+  </h1>
+  <div class="row">
+    <p class="sub" data-fade style="--d:.5s">Every word of every meeting, on your screen as it's spoken. Saved on <b>your Mac</b>. Nowhere else.</p>
+    <div class="cta" data-fade style="--d:.6s">
+      <a class="btn btn-solid" href="/UDITO-beta.dmg" download data-magnet>Download — free beta</a>
+      <a class="btn btn-ghost" href="#product" data-magnet>See it work</a>
     </div>
-    <p class="meta" data-reveal style="--d:.72s">macOS 14.4+ · Apple Silicon &amp; Intel · 1.1 MB · No account</p>
-    <div class="scrollcue" aria-hidden="true"></div>
   </div>
 </header>
 
-<div class="stagewrap">
-  <div class="stage" id="stage">
-    <div class="glowline" aria-hidden="true"></div>
-    <div class="window" role="img" aria-label="UDITO app window transcribing a meeting live with the copilot answering alongside">
-      <div class="titlebar">
-        <span class="tl r"></span><span class="tl y"></span><span class="tl g"></span>
-        <span class="name">UDITO — listening</span>
-        <span class="rec"><i></i>LIVE</span>
-      </div>
-      <div class="app-body">
-        <div class="pane-l" id="demo"></div>
-        <div class="pane-r">
-          <span class="label">Copilot</span>
-          <div class="qa">
-            <div class="q"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 3l1.9 5.8L20 10l-6.1 1.2L12 17l-1.9-5.8L4 10l6.1-1.2z"/></svg>Answer the last question</div>
-            <div class="a">Lead with the March numbers — a 23% drop in handoff time. Then offer the pilot group as proof it scales.</div>
-          </div>
-          <div class="hint"><span class="kbd">⌘⇧E</span><span class="kbd">hide / show</span></div>
-        </div>
-      </div>
-    </div>
-    <div class="float viewers" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>
-      3 watching live
-    </div>
-    <div class="float guest" aria-hidden="true">
-      <h5>Join live transcript</h5>
-      <div class="digits"><b>8</b><b>4</b><b>7</b><b>2</b><b>9</b><b>1</b></div>
-      <span class="ok">✓ Joined — speak freely</span>
-    </div>
-  </div>
-
-  <div class="marquee" aria-hidden="true">
-    <div class="marquee-track" id="marq">
-      <span>Zoom <i>·</i></span><span>Google Meet <i>·</i></span><span>Teams <i>·</i></span><span>Discord <i>·</i></span><span>Slack Huddles <i>·</i></span><span>Webex <i>·</i></span><span>FaceTime <i>·</i></span><span>Phone calls <i>·</i></span><span><b>Anything that makes sound</b> <i>·</i></span>
-      <span>Zoom <i>·</i></span><span>Google Meet <i>·</i></span><span>Teams <i>·</i></span><span>Discord <i>·</i></span><span>Slack Huddles <i>·</i></span><span>Webex <i>·</i></span><span>FaceTime <i>·</i></span><span>Phone calls <i>·</i></span><span><b>Anything that makes sound</b> <i>·</i></span>
-    </div>
+<div class="marquee" aria-hidden="true">
+  <div class="marquee-track" id="marq">
+    <span>Zoom</span><span class="solid">·</span><span>Google Meet</span><span class="solid">·</span><span>Teams</span><span class="solid">·</span><span>Discord</span><span class="solid">·</span><span>FaceTime</span><span class="solid">·</span><span>Phone calls</span><span class="solid">·</span><span class="solid">Anything that makes sound</span><span class="solid">·</span>
+    <span>Zoom</span><span class="solid">·</span><span>Google Meet</span><span class="solid">·</span><span>Teams</span><span class="solid">·</span><span>Discord</span><span class="solid">·</span><span>FaceTime</span><span class="solid">·</span><span>Phone calls</span><span class="solid">·</span><span class="solid">Anything that makes sound</span><span class="solid">·</span>
   </div>
 </div>
 
-<section id="product">
+<section class="intro wrap" aria-label="Why UDITO">
+  <p class="dim"><span class="ln"><span>Meetings move fast.</span></span></p>
+  <p class="dim"><span class="ln"><span style="--d:.08s">Words get lost.</span></span></p>
+  <p class="last"><span class="ln"><span style="--d:.16s">UDITO catches them.</span></span></p>
+  <p><span class="ln"><span style="--d:.26s">All of them.</span></span></p>
+</section>
+
+<section class="product wrap" id="product">
+  <div class="scene-head mono"><span>01 — The product</span><span>Live, both voices</span></div>
+  <div class="window" id="stage" data-fade>
+    <div class="titlebar">
+      <span class="tl"></span><span class="tl"></span><span class="tl"></span>
+      <span class="name">UDITO — listening</span>
+      <span class="rec"><i></i>LIVE</span>
+    </div>
+    <div class="demo" id="demo"></div>
+  </div>
+  <p class="caption" data-fade>This is the whole product. <b>You speak. They speak. It's all there,</b> half a second later — labeled, saved, yours.</p>
+</section>
+
+<section class="features on-white" id="features">
   <div class="wrap">
-    <div class="idx" data-reveal><span class="n">01</span><span class="t">The product</span></div>
-    <h2 data-reveal style="--d:.05s">A second pair of ears,<br>built into the machine.</h2>
-    <div class="bento">
-      <div class="cell c-3" data-reveal>
-        <h3>Both voices, live</h3>
-        <p>Your mic and the meeting audio transcribed in parallel — You, Them 1, Them 2 — labeled and diarized, ~½ second behind speech.</p>
-        <div class="art">
-          <div class="eq-row"><span class="who">YOU</span><span class="eq cy"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span></div>
-          <div class="eq-row"><span class="who">THEM 1</span><span class="eq or"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span></div>
-          <div class="eq-row"><span class="who">THEM 2</span><span class="eq or" style="opacity:.6"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span><span class="fill"></span></div>
-        </div>
-      </div>
-      <div class="cell c-3" data-reveal style="--d:.07s">
-        <h3>Live share links</h3>
-        <p>One click mints an unguessable link. Anyone who opens it watches your transcript render live in their browser. End it, and it's gone everywhere.</p>
-        <div class="art">
-          <div class="linkpill">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.5 1.5"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.5-1.5"/></svg>
-            udito…/v/xK2…9w
-            <span class="eyes"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M1 12s4-7 11-7 11 7 11 7-4 7-11 7-11-7-11-7z"/><circle cx="12" cy="12" r="3"/></svg>3</span>
-          </div>
-        </div>
-      </div>
-      <div class="cell c-2" data-reveal>
-        <h3>Remote-guest sessions</h3>
-        <p>Text someone a 6-digit code. Their voice streams into your transcript from any phone browser, anywhere on earth.</p>
-        <div class="art"><div class="codeart"><b>8</b><b>4</b><b>7</b><b>2</b><b>9</b><b>1</b></div></div>
-      </div>
-      <div class="cell c-2" data-reveal style="--d:.07s">
-        <h3>AI copilot, mid-meeting</h3>
-        <p>Grounded in the live transcript, your documents, and past meetings.</p>
-        <div class="art chat">
-          <div class="bub q">what did they ask?</div>
-          <div class="bub a"><span class="shimmer">Drafting your answer, in your voice…</span></div>
-        </div>
-      </div>
-      <div class="cell c-2" data-reveal style="--d:.14s">
-        <h3>Invisible in screen shares</h3>
-        <p>Floats above every app and Space. Screen recordings and shared screens never see it.</p>
-        <div class="art">
-          <div class="ghostwin">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"/><path d="M4 4l16 16"/></svg>
-            <code>window.sharingType = .none</code>
-          </div>
-        </div>
-      </div>
-      <div class="cell c-4" data-reveal>
-        <h3>The follow-through, handled</h3>
-        <p>Everything after the meeting that nobody does — done before you close the lid.</p>
-        <div class="art checks">
-          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Summary + action items with owners, written into every saved transcript</div>
-          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>One-click follow-up email draft, in your voice, in your clipboard</div>
-          <div><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Files named after the calendar event — "Design sync", not "Meeting 47"</div>
-        </div>
-      </div>
-      <div class="cell c-2" data-reveal style="--d:.07s">
-        <h3>No bots in your meeting</h3>
-        <p>UDITO listens to the Mac's own audio. Nothing joins the call, nobody sees a "notetaker".</p>
-        <div class="art"><div class="linkpill" style="justify-content:center"><code class="mono" style="font-size:11px;color:var(--txt-3)">participants: you + them. that's it.</code></div></div>
-      </div>
+    <div class="scene-head mono"><span>02 — What it does</span><span>Six things, done properly</span></div>
+    <div class="frow" data-fade><span class="n">01</span><h3>Live transcript</h3><p>Your voice and theirs, word by word, half a second behind reality.</p></div>
+    <div class="frow" data-fade><span class="n">02</span><h3>Share links</h3><p>Anyone with the link watches live. End it, and it's gone everywhere.</p></div>
+    <div class="frow" data-fade><span class="n">03</span><h3>Guest sessions</h3><p>A six-digit code brings a faraway voice into your transcript.</p></div>
+    <div class="frow" data-fade><span class="n">04</span><h3>Copilot</h3><p>Ask about the meeting, mid-meeting. Answers in your voice.</p></div>
+    <div class="frow" data-fade><span class="n">05</span><h3>Invisible</h3><p>Screen shares and recordings never see it. Only you do.</p></div>
+    <div class="frow" data-fade><span class="n">06</span><h3>Yours</h3><p>Saved as files on your Mac. No account. No cloud archive. Ever.</p></div>
+  </div>
+</section>
+
+<section class="custody wrap" id="privacy">
+  <div class="scene-head mono"><span>03 — Custody</span><span>Where your words live</span></div>
+  <p id="words" aria-label="Otter keeps your conversations. Fireflies keeps them. Granola keeps them. UDITO keeps nothing. Your Mac keeps everything.">
+    <span class="w strike">Otter</span> <span class="w">keeps</span> <span class="w">your</span> <span class="w">conversations.</span>
+    <span class="w strike">Fireflies</span> <span class="w">keeps</span> <span class="w">them.</span>
+    <span class="w strike">Granola</span> <span class="w">keeps</span> <span class="w">them.</span>
+    <span class="final-line"><span class="w">UDITO</span> <span class="w">keeps</span> <span class="w">nothing.</span>
+    <span class="w">Your</span> <span class="w">Mac</span> <span class="w">keeps</span> <span class="w">everything.</span></span>
+  </p>
+</section>
+
+<section class="decksec wrap" id="live">
+  <div class="scene-head mono"><span>04 — Live links</span><span>Share the meeting as it happens</span></div>
+  <div class="deck">
+    <div class="card">
+      <div class="idxrow mono"><span>Step 1</span><span class="bignum">01 / 03</span></div>
+      <h3>Mint a code<br>or a link.</h3>
+      <div class="foot"><p>One click. A <b>six-digit code</b> invites a remote voice in. An <b>unguessable link</b> lets silent viewers watch.</p><span class="mono" style="color:var(--g2)">One click · zero setup</span></div>
+    </div>
+    <div class="card invert">
+      <div class="idxrow mono"><span>Step 2</span><span class="bignum">02 / 03</span></div>
+      <h3>They open<br>a page.</h3>
+      <div class="foot"><p>No app. No account. A phone browser is enough — their words arrive on your Mac <b>half a second behind reality</b>.</p><span class="mono" style="color:#999">Works on any device</span></div>
+    </div>
+    <div class="card">
+      <div class="idxrow mono"><span>Step 3</span><span class="bignum">03 / 03</span></div>
+      <h3>End it.<br>It's gone.</h3>
+      <div class="foot"><p>Ending the session kills the link everywhere and wipes the relay in the same second. <b>Nothing left behind.</b></p><span class="mono" style="color:var(--g2)">Self-destructing by design</span></div>
     </div>
   </div>
 </section>
 
-<div class="statement" id="privacy">
-  <div class="wrap">
-    <div class="idx" data-reveal><span class="n">02</span><span class="t">Custody</span></div>
-    <p id="words" aria-label="Otter keeps your conversations on their servers. Fireflies keeps them. Granola keeps them. UDITO keeps your words in one place: your Mac.">
-      <span class="w strike">Otter</span> <span class="w">keeps</span> <span class="w">your</span> <span class="w">conversations</span> <span class="w">on</span> <span class="w">their</span> <span class="w">servers.</span>
-      <span class="w strike">Fireflies</span> <span class="w">keeps</span> <span class="w">them.</span>
-      <span class="w strike">Granola</span> <span class="w">keeps</span> <span class="w">them.</span><br>
-      <span class="w mintw">UDITO</span> <span class="w mintw">keeps</span> <span class="w mintw">your</span> <span class="w mintw">words</span> <span class="w mintw">in</span> <span class="w mintw">one</span> <span class="w mintw">place:</span> <span class="w mintw">your</span> <span class="w mintw">Mac.</span>
-    </p>
-  </div>
-</div>
-
-<div class="hscroll" id="live">
-  <div class="hsticky">
-    <div class="hhead wrap">
-      <div class="idx"><span class="n">03</span><span class="t">Live links</span></div>
-      <h2>Share the meeting<br>while it's still happening.</h2>
-    </div>
-    <div class="htrack" id="htrack">
-      <div class="panel">
-        <span class="big">01</span>
-        <h3>Mint a code or a link</h3>
-        <p>A private 6-digit code invites a remote voice into your transcript. An unguessable link lets silent viewers watch. One click each.</p>
-        <div class="art"><div class="codeart" style="max-width:280px"><b>8</b><b>4</b><b>7</b><b>2</b><b>9</b><b>1</b></div><p class="mono-tip">one click · zero setup</p></div>
-      </div>
-      <div class="panel">
-        <span class="big">02</span>
-        <h3>They open a page</h3>
-        <p>No app. No account. A phone browser is enough — their words arrive on your Mac half a second behind reality, from anywhere on earth.</p>
-        <div class="art">
-          <div class="phone-mini">
-            <div class="dev"><div class="cam"></div><div class="mic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a4 4 0 0 1 4 4v5a4 4 0 0 1-8 0V6a4 4 0 0 1 4-4z"/><path d="M5 11a7 7 0 0 0 14 0"/></svg></div><span class="mono" style="font-size:9.5px;color:var(--txt-3)">speaking…</span></div>
-            <div class="arrow"></div>
-            <span class="mono" style="font-size:11px;color:var(--mint)">→ your Mac</span>
-          </div>
-          <p class="mono-tip">works on any device</p>
-        </div>
-      </div>
-      <div class="panel">
-        <span class="big">03</span>
-        <h3>End it. It's gone.</h3>
-        <p>Ending the session kills the link everywhere and wipes the relay in the same second. Nothing is left behind to leak later.</p>
-        <div class="art">
-          <div class="burn">$ session end<br>→ link revoked <b>everywhere</b><br>→ relay wiped · 0 bytes retained</div>
-          <p class="mono-tip">self-destructing by design</p>
-        </div>
-      </div>
-    </div>
-  </div>
-</div>
-
-<section id="compare" style="padding-top: 40px;">
-  <div class="wrap">
-    <div class="idx" data-reveal><span class="n">04</span><span class="t">Versus</span></div>
-    <h2 data-reveal style="--d:.05s">The honest table.</h2>
-    <div class="tablewrap" data-reveal style="--d:.1s">
-      <table>
-        <thead><tr><th scope="col">Capability</th><th scope="col" class="hl">UDITO</th><th scope="col">Otter</th><th scope="col">Granola</th><th scope="col">Fireflies</th></tr></thead>
-        <tbody>
-          <tr><td>Live word-by-word view</td><td class="hl ok">✓</td><td class="ok">✓</td><td class="na">—</td><td class="na">—</td></tr>
-          <tr><td>No bot joins the call</td><td class="hl ok">✓</td><td class="na">—</td><td class="ok">✓</td><td class="na">—</td></tr>
-          <tr><td>Works with any app that makes sound</td><td class="hl ok">✓</td><td class="na">—</td><td class="ok">✓</td><td class="na">—</td></tr>
-          <tr><td>Conversations stored on vendor cloud</td><td class="hl ok">Never</td><td class="na">Always</td><td class="na">Yes</td><td class="na">Always</td></tr>
-          <tr><td>Remote-guest live sessions</td><td class="hl ok">✓</td><td class="na">—</td><td class="na">—</td><td class="na">—</td></tr>
-          <tr><td>In-meeting AI copilot</td><td class="hl ok">✓</td><td class="na">Limited</td><td class="na">After</td><td class="na">After</td></tr>
-        </tbody>
-      </table>
-    </div>
+<section class="versus wrap" id="compare">
+  <div class="scene-head mono"><span>05 — Versus</span><span>The honest table</span></div>
+  <div class="vtable" data-fade>
+    <div class="vrow head"><span class="cap" style="font-weight:400">Capability</span><span class="u">UDITO</span><span>Otter</span><span>Granola</span><span>Fireflies</span></div>
+    <div class="vrow"><span class="cap">Live word-by-word view</span><span class="y">✓</span><span class="y" style="color:var(--g3)">✓</span><span class="n">—</span><span class="n">—</span></div>
+    <div class="vrow"><span class="cap">No bot joins the call</span><span class="y">✓</span><span class="n">—</span><span class="y" style="color:var(--g3)">✓</span><span class="n">—</span></div>
+    <div class="vrow"><span class="cap">Works with anything that makes sound</span><span class="y">✓</span><span class="n">—</span><span class="y" style="color:var(--g3)">✓</span><span class="n">—</span></div>
+    <div class="vrow"><span class="cap">Your conversations on their cloud</span><span class="y">Never</span><span class="n">Always</span><span class="n">Yes</span><span class="n">Always</span></div>
+    <div class="vrow"><span class="cap">Remote-guest live sessions</span><span class="y">✓</span><span class="n">—</span><span class="n">—</span><span class="n">—</span></div>
+    <div class="vrow"><span class="cap">AI copilot, mid-meeting</span><span class="y">✓</span><span class="n">Limited</span><span class="n">After</span><span class="n">After</span></div>
   </div>
 </section>
 
-<section id="pricing">
+<section class="pricing on-white" id="pricing">
   <div class="wrap">
-    <div class="idx" data-reveal><span class="n">05</span><span class="t">Pricing</span></div>
-    <h2 data-reveal style="--d:.05s">Free while it's beta.<br>Honest after.</h2>
-    <div class="plans">
-      <div class="plan" data-reveal>
-        <span class="tier">Beta</span>
-        <p class="amt">$0 <small>while in beta</small></p>
+    <div class="scene-head mono"><span>06 — Pricing</span><span>Free while it's beta</span></div>
+    <div class="pgrid" data-fade>
+      <div class="pcol">
+        <span class="tier">Beta — now</span>
+        <p class="amt">$0</p>
+        <p class="per">while in beta</p>
         <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Everything — live transcripts, share links, guest sessions, copilot</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Bring your own transcription &amp; AI keys</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Transcripts live on your Mac, forever yours</li>
+          <li>Everything. Live transcripts, share links, guest sessions, copilot.</li>
+          <li>Bring your own transcription &amp; AI keys.</li>
+          <li>Transcripts live on your Mac, forever yours.</li>
         </ul>
-        <a class="btn btn-line" href="/UDITO-beta.dmg" download data-magnet>Download the beta</a>
+        <a class="btn btn-solid" href="/UDITO-beta.dmg" download data-magnet>Download the beta</a>
       </div>
-      <div class="plan pro" data-reveal style="--d:.08s">
-        <span class="tag">COMING</span>
-        <span class="tier">Pro</span>
-        <p class="amt">$12 <small>/ month</small></p>
+      <div class="pcol">
+        <span class="tier">Pro — coming</span>
+        <p class="amt">$12</p>
+        <p class="per">per month</p>
         <ul>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>No keys, no setup — transcription hours included</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Priority relay for live links &amp; guests</li>
-          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M20 6L9 17l-5-5"/></svg>Same custody: zero cloud storage of your words</li>
+          <li>No keys, no setup — transcription hours included.</li>
+          <li>Priority relay for live links and guests.</li>
+          <li>Same custody. Zero cloud storage of your words.</li>
         </ul>
-        <a class="btn btn-mint" href="mailto:pavansaipendry2002@gmail.com?subject=UDITO%20Pro%20waitlist" data-magnet>Join the waitlist</a>
+        <a class="btn btn-ghost" href="mailto:pavansaipendry2002@gmail.com?subject=UDITO%20Pro%20waitlist" data-magnet>Join the waitlist</a>
       </div>
     </div>
   </div>
 </section>
 
-<section id="faq">
-  <div class="wrap">
-    <div class="idx" data-reveal><span class="n">06</span><span class="t">FAQ</span></div>
-    <h2 data-reveal style="--d:.05s">Fair questions.</h2>
-    <div class="faq" data-reveal style="--d:.1s">
-      <details>
-        <summary>How is this different from Otter or Granola?</summary>
-        <p>Two ways. Latency: UDITO shows both sides of the conversation word by word as they're spoken — not polished notes afterwards. Custody: they archive your conversations on their servers; UDITO writes files to your Mac and stores nothing about you in any cloud.</p>
-      </details>
-      <details>
-        <summary>Does a bot join my meetings?</summary>
-        <p>Never. UDITO listens to your Mac's own audio — it works identically with Zoom, Meet, Teams, Discord, a phone call, or a YouTube video, and other participants see nothing.</p>
-      </details>
-      <details>
-        <summary>What actually leaves my computer?</summary>
-        <p>Audio streams to the transcription engine (Deepgram) in real time — it is not your archive. If you use the copilot, the context you ask about goes to Anthropic for that answer. Transcript files exist only on your Mac. Live links relay words in motion and wipe on end.</p>
-      </details>
-      <details>
-        <summary>Is recording a meeting legal?</summary>
-        <p>Consent laws vary — in many places every participant must agree. UDITO plays it straight: guests see a clear "your voice is being transcribed" page and viewers know they're watching a live transcript. Getting consent is on you. Don't be creepy.</p>
-      </details>
-      <details>
-        <summary>The download says it's from an unidentified developer?</summary>
-        <p>The beta is not yet notarized with Apple (that's coming with the paid release). Right-click the app → Open → Open once, and macOS remembers. The entire source of what you're running talks only to Deepgram, Anthropic, and the relay — nothing else.</p>
-      </details>
-    </div>
-  </div>
+<section class="faqsec wrap" id="faq">
+  <div class="scene-head mono"><span>07 — FAQ</span><span>Fair questions</span></div>
+  <details>
+    <summary>How is this different from Otter or Granola?</summary>
+    <p>Latency and custody. UDITO shows both sides of the conversation word by word as they're spoken — not notes afterwards. And they archive your conversations on their servers; UDITO writes files to your Mac and stores nothing about you in any cloud.</p>
+  </details>
+  <details>
+    <summary>Does a bot join my meetings?</summary>
+    <p>Never. UDITO listens to your Mac's own audio — Zoom, Meet, Teams, Discord, a phone call, a video. Other participants see nothing.</p>
+  </details>
+  <details>
+    <summary>What actually leaves my computer?</summary>
+    <p>Audio streams to the transcription engine (Deepgram) in real time — it is not your archive. If you use the copilot, the context you ask about goes to Anthropic for that answer. Transcript files exist only on your Mac. Live links relay words in motion and wipe on end.</p>
+  </details>
+  <details>
+    <summary>Is recording a meeting legal?</summary>
+    <p>Consent laws vary — in many places every participant must agree. UDITO plays it straight: guests see a clear "your voice is being transcribed" page, and viewers know they're watching a live transcript. Getting consent is on you.</p>
+  </details>
+  <details>
+    <summary>macOS says the app is from an unidentified developer?</summary>
+    <p>The beta isn't Apple-notarized yet (that ships with the paid release). Right-click the app → Open → Open once, and macOS remembers.</p>
+  </details>
 </section>
 
-<div class="final">
-  <div class="wrap">
-    <h2 data-reveal>Never miss a word<br>you were in the room for.</h2>
-    <p class="lead" data-reveal style="--d:.08s">Free during beta. On your Mac in one minute.</p>
-    <div class="cta-row" data-reveal style="--d:.14s">
-      <a class="btn btn-mint" href="/UDITO-beta.dmg" download data-magnet>Download for macOS — 1.1 MB</a>
-      <a class="btn btn-line" href="/join" data-magnet>Join a session with a code</a>
-    </div>
-    <p class="gatekeeper" data-reveal style="--d:.2s">Beta build — right-click → Open on first launch. Requires macOS 14.4+.</p>
+<section class="final wrap">
+  <h2>
+    <span class="ln"><span>Never miss</span></span>
+    <span class="ln"><span style="--d:.1s">a word.</span></span>
+  </h2>
+  <div class="cta" data-fade style="--d:.25s">
+    <a class="btn btn-solid" href="/UDITO-beta.dmg" download data-magnet>Download for macOS</a>
+    <a class="btn btn-ghost" href="/join" data-magnet>Join with a code</a>
   </div>
-</div>
+  <p class="note" data-fade style="--d:.35s">Free during beta · 1.1 MB · macOS 14.4+ · No account</p>
+</section>
 
 <footer>
-  <div class="wrap footgrid">
-    <div class="col brand">
-      <a class="logo" href="#top">
-        <svg viewBox="0 0 24 24" fill="none" stroke="var(--mint)" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 10a6 6 0 1 1 12 0c0 4-3 4.5-3 8a3 3 0 0 1-6 0"/><path d="M9.5 10a2.5 2.5 0 0 1 5 0"/></svg>
-        UDITO
-      </a>
-      <p>The sense of hearing, for your Mac. © 2026</p>
-    </div>
-    <div class="col">
-      <h5>Product</h5>
-      <a href="#product">Features</a>
-      <a href="#pricing">Pricing</a>
+  <div class="wrap footrow">
+    <span>© 2026 UDITO — Hear everything.</span>
+    <span class="links">
       <a href="/UDITO-beta.dmg" download>Download</a>
       <a href="/join">Join with a code</a>
-    </div>
-    <div class="col">
-      <h5>Company</h5>
       <a href="mailto:pavansaipendry2002@gmail.com">Contact</a>
-      <a href="#" aria-disabled="true">Privacy</a>
-      <a href="#" aria-disabled="true">Terms</a>
-    </div>
+    </span>
   </div>
-  <span class="watermark" id="wm" aria-hidden="true">UDITO</span>
+  <span class="watermark" aria-hidden="true">UDITO</span>
 </footer>
 
 <script src="https://unpkg.com/lenis@1.1.18/dist/lenis.min.js"></script>
 <script>
-/* ============================================================
-   GLBG — the 3D universe. One WebGL particle system behind the
-   whole page. ~100k GPU points morph between five formations as
-   you scroll: waveform → listening sphere → locked core →
-   word-stream → starburst. Reacts to mouse and scroll velocity.
-   ============================================================ */
-(function () {
-  const canvas = document.getElementById("gl");
-  const gl = canvas.getContext("webgl", { alpha: true, antialias: false, powerPreference: "high-performance" });
-  if (!gl) return; // graceful: page works fine without the universe
-  const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
-  const mobile = matchMedia("(max-width: 920px)").matches;
-  const N = mobile ? 38000 : 105000;
-
-  /* ---- formations ---- */
-  const P = [new Float32Array(N * 3), new Float32Array(N * 3), new Float32Array(N * 3), new Float32Array(N * 3), new Float32Array(N * 3)];
-  const seed = new Float32Array(N);
-  const rnd = (() => { let s = 42; return () => (s = (s * 16807) % 2147483647) / 2147483647; })();
-  for (let i = 0; i < N; i++) {
-    const i3 = i * 3;
-    seed[i] = rnd();
-    // 0: waveform plane (hero)
-    P[0][i3] = (rnd() - 0.5) * 30;
-    P[0][i3 + 1] = (rnd() - 0.5) * 0.6;
-    P[0][i3 + 2] = (rnd() - 0.5) * 16;
-    // 1: listening sphere (product)
-    { const t = rnd() * Math.PI * 2, u = rnd() * 2 - 1, r = 5.6 + rnd() * 0.5, q = Math.sqrt(1 - u * u);
-      P[1][i3] = r * q * Math.cos(t); P[1][i3 + 1] = r * u; P[1][i3 + 2] = r * q * Math.sin(t); }
-    // 2: locked core (custody) — dense inner orb + thin shell
-    { const shell = rnd() < 0.25, r = shell ? 4.4 : Math.cbrt(rnd()) * 2.1;
-      const t = rnd() * Math.PI * 2, u = rnd() * 2 - 1, q = Math.sqrt(1 - u * u);
-      P[2][i3] = r * q * Math.cos(t); P[2][i3 + 1] = r * u; P[2][i3 + 2] = r * q * Math.sin(t); }
-    // 3: word-stream (live links) — a river flowing in x
-    { const g = (rnd() + rnd() + rnd() - 1.5) * 1.1;
-      P[3][i3] = (rnd() - 0.5) * 34;
-      P[3][i3 + 1] = g * 0.9 + Math.sin(P[3][i3] * 0.4) * 0.8;
-      P[3][i3 + 2] = (rnd() + rnd() - 1) * 2.4; }
-    // 4: starburst (finale) — kept well inside the camera orbit
-    { const t = rnd() * Math.PI * 2, u = rnd() * 2 - 1, r = 2.5 + Math.pow(rnd(), 0.4) * 8.5, q = Math.sqrt(1 - u * u);
-      P[4][i3] = r * q * Math.cos(t); P[4][i3 + 1] = r * u * 0.7; P[4][i3 + 2] = r * q * Math.sin(t); }
-  }
-
-  /* ---- shaders ---- */
-  const vsrc = `
-  attribute vec3 p0; attribute vec3 p1; attribute vec3 p2; attribute vec3 p3; attribute vec3 p4;
-  attribute float aSeed;
-  uniform mat4 uVP; uniform float uT; uniform float uMorph; uniform float uVel; uniform float uDPR;
-  varying float vA; varying float vMix;
-  float w(float i, float m) { return clamp(1.0 - abs(m - i), 0.0, 1.0); }
-  void main() {
-    float m = clamp(uMorph + (aSeed - 0.5) * 0.45, 0.0, 4.0);
-    float w0 = w(0.0, m), w1 = w(1.0, m), w2 = w(2.0, m), w3 = w(3.0, m), w4 = w(4.0, m);
-    vec3 pos = p0 * w0 + p1 * w1 + p2 * w2 + p3 * w3 + p4 * w4;
-    float s6 = aSeed * 6.2831;
-    // waveform ripple (hero)
-    pos.y += w0 * sin(pos.x * 0.55 + uT * 1.4 + s6) * (0.9 + uVel * 0.35) * (1.0 - abs(pos.z) * 0.05);
-    pos.y += w0 * sin(pos.z * 0.9 + uT * 0.9) * 0.35;
-    // sphere breath
-    pos *= 1.0 + w1 * sin(uT * 0.8 + s6) * 0.03;
-    // core pulse
-    pos *= 1.0 + w2 * sin(uT * 2.2 + s6) * 0.02;
-    // stream flow
-    pos.x += w3 * (mod(aSeed * 34.0 + uT * (2.2 + uVel * 0.6), 34.0) - 17.0) - w3 * pos.x * 0.98;
-    // gentle universal drift
-    pos += 0.10 * vec3(sin(uT * 0.6 + pos.y), sin(uT * 0.5 + pos.z), sin(uT * 0.4 + pos.x));
-    vec4 mv = uVP * vec4(pos, 1.0);
-    gl_Position = mv;
-    float dist = max(mv.w, 0.001);
-    // Hard cap on size + fade of near-camera points: without these, particles
-    // close to the lens render as huge blurry blobs that eat the page.
-    gl_PointSize = min((1.5 + aSeed * 2.0 + uVel * 0.5) * uDPR * (10.0 / dist), 4.2 * uDPR);
-    vA = clamp(1.5 - dist * 0.055, 0.05, 0.7) * smoothstep(2.0, 5.5, dist);
-    vMix = aSeed;
-  }`;
-  const fsrc = `
-  precision mediump float;
-  varying float vA; varying float vMix;
-  uniform float uFade;
-  void main() {
-    vec2 c = gl_PointCoord - 0.5;
-    float d = length(c);
-    if (d > 0.5) discard;
-    float a = smoothstep(0.5, 0.08, d) * vA * uFade;
-    vec3 mint = vec3(0.20, 0.83, 0.60);
-    vec3 cyan = vec3(0.35, 0.78, 0.98);
-    vec3 col = mix(mint, cyan, smoothstep(0.3, 0.9, vMix));
-    gl_FragColor = vec4(col, a);
-  }`;
-  function shader(type, src) {
-    const s = gl.createShader(type); gl.shaderSource(s, src); gl.compileShader(s);
-    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) { console.warn(gl.getShaderInfoLog(s)); return null; }
-    return s;
-  }
-  const vs = shader(gl.VERTEX_SHADER, vsrc), fs = shader(gl.FRAGMENT_SHADER, fsrc);
-  if (!vs || !fs) return;
-  const prog = gl.createProgram();
-  gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
-  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) return;
-  gl.useProgram(prog);
-
-  function attr(name, data, size) {
-    const b = gl.createBuffer();
-    gl.bindBuffer(gl.ARRAY_BUFFER, b);
-    gl.bufferData(gl.ARRAY_BUFFER, data, gl.STATIC_DRAW);
-    const loc = gl.getAttribLocation(prog, name);
-    gl.enableVertexAttribArray(loc);
-    gl.vertexAttribPointer(loc, size, gl.FLOAT, false, 0, 0);
-  }
-  attr("p0", P[0], 3); attr("p1", P[1], 3); attr("p2", P[2], 3); attr("p3", P[3], 3); attr("p4", P[4], 3);
-  attr("aSeed", seed, 1);
-  const U = (n) => gl.getUniformLocation(prog, n);
-  const uVP = U("uVP"), uT = U("uT"), uMorph = U("uMorph"), uVel = U("uVel"), uDPR = U("uDPR"), uFade = U("uFade");
-
-  gl.enable(gl.BLEND);
-  gl.blendFunc(gl.SRC_ALPHA, gl.ONE);
-  gl.disable(gl.DEPTH_TEST);
-
-  /* ---- matrices ---- */
-  function persp(fov, asp, near, far) {
-    const f = 1 / Math.tan(fov / 2), nf = 1 / (near - far);
-    return [f / asp, 0, 0, 0, 0, f, 0, 0, 0, 0, (far + near) * nf, -1, 0, 0, 2 * far * near * nf, 0];
-  }
-  function lookAt(ex, ey, ez, cx, cy, cz) {
-    let zx = ex - cx, zy = ey - cy, zz = ez - cz;
-    let zl = Math.hypot(zx, zy, zz); zx /= zl; zy /= zl; zz /= zl;
-    let xx = 0 * zz - 1 * zy ? 0 : 0; // up = (0,1,0)
-    let ax = 1 * zz - 0 * zy, ay = 0 * zx - 0 * zz, az = 0 * zy - 1 * zx; // up × z
-    ax = zz; ay = 0; az = -zx; // simplified cross((0,1,0), z)
-    let al = Math.hypot(ax, ay, az) || 1; ax /= al; ay /= al; az /= al;
-    const bx = zy * az - zz * ay, by = zz * ax - zx * az, bz = zx * ay - zy * ax;
-    return [ax, bx, zx, 0, ay, by, zy, 0, az, bz, zz, 0,
-      -(ax * ex + ay * ey + az * ez), -(bx * ex + by * ey + bz * ez), -(zx * ex + zy * ey + zz * ez), 1];
-  }
-  function mul(a, b) {
-    const o = new Array(16);
-    for (let r = 0; r < 4; r++) for (let c = 0; c < 4; c++) {
-      o[c * 4 + r] = a[r] * b[c * 4] + a[4 + r] * b[c * 4 + 1] + a[8 + r] * b[c * 4 + 2] + a[12 + r] * b[c * 4 + 3];
-    }
-    return o;
-  }
-
-  let dpr = 1;
-  function size() {
-    dpr = Math.min(devicePixelRatio || 1, 1.75);
-    canvas.width = innerWidth * dpr; canvas.height = innerHeight * dpr;
-    gl.viewport(0, 0, canvas.width, canvas.height);
-  }
-  size(); addEventListener("resize", size);
-
-  /* ---- scroll → formation timeline ---- */
-  let marks = [0, 1, 2, 3, 4].map((i) => i * 1000);
-  function measure() {
-    const el = (s) => document.querySelector(s);
-    marks = [0,
-      (el("#product")?.offsetTop ?? 800) - innerHeight * 0.5,
-      (el("#privacy")?.offsetTop ?? 2000) - innerHeight * 0.5,
-      (el("#live")?.offsetTop ?? 3000) - innerHeight * 0.4,
-      (el(".final")?.offsetTop ?? 5000) - innerHeight * 0.7];
-  }
-  measure(); addEventListener("resize", measure);
-  setTimeout(measure, 500); setTimeout(measure, 2000);
-  const ease = (x) => x * x * (3 - 2 * x);
-  function morphAt(y) {
-    for (let i = marks.length - 1; i >= 0; i--) {
-      if (y >= marks[i]) {
-        if (i === marks.length - 1) return i;
-        return i + ease(Math.min(1, (y - marks[i]) / Math.max(1, marks[i + 1] - marks[i])));
-      }
-    }
-    return 0;
-  }
-
-  let smoothVel = 0, hidden = false;
-  document.addEventListener("visibilitychange", () => { hidden = document.hidden; });
-
-  window.GLBG = {
-    render(t, y, vel, mx, my) {
-      if (hidden) return;
-      smoothVel += (Math.min(6, Math.abs(vel || 0)) - smoothVel) * 0.06;
-      const time = reduced ? 0 : t * 0.001;
-      const morph = reduced ? 0 : morphAt(y);
-      // Stage-light envelope: the universe owns the hero, recedes to a faint
-      // glow behind reading sections, and returns for the finale. Without
-      // this it slowly buries the content ("fungus mode").
-      let fade = 0.14 + Math.max(0, 1 - y / (innerHeight * 1.05)) * 0.86;
-      const finalTop = marks[4] ?? 1e9;
-      fade = Math.max(fade, 0.14 + Math.min(1, Math.max(0, (y - (finalTop - 600)) / 700)) * 0.66);
-      // camera: slow orbit + mouse parallax, fixed radius — never enter the cloud
-      const ang = time * 0.05 + (mx - 0.5) * 0.5;
-      const rad = 16 + Math.sin(time * 0.1) * 0.4;
-      const ey = 3.8 + (my - 0.5) * -2.0 + Math.sin(time * 0.07) * 0.5;
-      const view = lookAt(Math.sin(ang) * rad, ey, Math.cos(ang) * rad, 0, 0, 0);
-      const proj = persp(0.9, innerWidth / innerHeight, 0.1, 100);
-      gl.clearColor(0, 0, 0, 0);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      gl.uniformMatrix4fv(uVP, false, new Float32Array(mul(proj, view)));
-      gl.uniform1f(uT, time);
-      gl.uniform1f(uMorph, morph);
-      gl.uniform1f(uVel, smoothVel);
-      gl.uniform1f(uDPR, dpr);
-      gl.uniform1f(uFade, fade);
-      gl.drawArrays(gl.POINTS, 0, N);
-    },
-  };
-  if (reduced) GLBG.render(0, 0, 0, 0.5, 0.5);
-})();
-</script>
-<script>
 (function () {
   const reduced = matchMedia("(prefers-reduced-motion: reduce)").matches;
   const fine = matchMedia("(pointer: fine)").matches;
-  let velocity = 0, scrollYNow = 0;
+  let velocity = 0, yNow = 0;
 
-  /* ---------- Lenis smooth scroll ---------- */
+  /* Lenis — the scroll feel */
   let lenis = null;
   if (!reduced && window.Lenis) {
-    lenis = new Lenis({ lerp: 0.11, wheelMultiplier: 1.05 });
-    lenis.on("scroll", (e) => { velocity = e.velocity; scrollYNow = e.scroll; });
+    lenis = new Lenis({ lerp: 0.1, wheelMultiplier: 1.02 });
+    lenis.on("scroll", (e) => { velocity = e.velocity; yNow = e.scroll; });
     document.querySelectorAll('a[href^="#"]').forEach((a) =>
       a.addEventListener("click", (ev) => {
         const t = document.querySelector(a.getAttribute("href"));
-        if (t) { ev.preventDefault(); lenis.scrollTo(t, { offset: -60 }); }
+        if (t) { ev.preventDefault(); lenis.scrollTo(t, { offset: 0 }); }
       }));
   }
-  addEventListener("scroll", () => { if (!lenis) scrollYNow = scrollY; }, { passive: true });
+  addEventListener("scroll", () => { if (!lenis) yNow = scrollY; }, { passive: true });
 
-  /* ---------- split hero headline into chars ---------- */
-  document.querySelectorAll("[data-split]").forEach((line) => {
-    const text = line.textContent;
-    line.textContent = "";
-    [...text].forEach((c, i) => {
-      const s = document.createElement("span");
-      s.className = "ch";
-      s.textContent = c === " " ? " " : c;
-      s.style.transition = `transform 1.1s cubic-bezier(.16,1,.3,1) ${0.06 + i * 0.024}s`;
-      line.appendChild(s);
-    });
-  });
-  requestAnimationFrame(() => requestAnimationFrame(() => {
-    document.querySelectorAll(".ch").forEach((c) => (c.style.transform = "translateY(0)"));
-  }));
-
-  /* ---------- reveal on enter ---------- */
+  /* reveals: masked lines + fades */
   const io = new IntersectionObserver((es) => {
     es.forEach((e) => { if (e.isIntersecting) { e.target.classList.add("in"); io.unobserve(e.target); } });
-  }, { threshold: 0.1, rootMargin: "0px 0px -6% 0px" });
-  document.querySelectorAll("[data-reveal]").forEach((el) => io.observe(el));
+  }, { threshold: 0.15, rootMargin: "0px 0px -8% 0px" });
+  document.querySelectorAll(".ln, [data-fade]").forEach((el) => io.observe(el));
 
-  /* ---------- magnetic buttons ---------- */
+  /* magnetic buttons */
   if (fine && !reduced) {
     document.querySelectorAll("[data-magnet]").forEach((b) => {
       b.addEventListener("mousemove", (e) => {
         const r = b.getBoundingClientRect();
-        b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * 0.22}px, ${(e.clientY - r.top - r.height / 2) * 0.3}px)`;
+        b.style.transform = `translate(${(e.clientX - r.left - r.width / 2) * 0.18}px, ${(e.clientY - r.top - r.height / 2) * 0.28}px)`;
       });
       b.addEventListener("mouseleave", () => { b.style.transform = ""; });
     });
   }
 
-  /* ---------- bento cursor glow ---------- */
-  document.querySelectorAll(".cell").forEach((cell) => {
-    cell.addEventListener("mousemove", (e) => {
-      const r = cell.getBoundingClientRect();
-      cell.style.setProperty("--mx", (e.clientX - r.left) + "px");
-      cell.style.setProperty("--my", (e.clientY - r.top) + "px");
-    });
-  });
-
-  /* ---------- mouse for the 3D universe ---------- */
-  let mx = 0.5, my = 0.5;
-  addEventListener("mousemove", (e) => { mx = e.clientX / innerWidth; my = e.clientY / innerHeight; }, { passive: true });
-
-  /* ---------- scrub engine (one rAF for everything) ---------- */
-  const stage = document.getElementById("stage");
-  const hs = document.getElementById("live");
-  const track = document.getElementById("htrack");
-  const marq = document.getElementById("marq");
+  /* one rAF: progress bar, marquee velocity, custody words, window scale */
   const prog = document.getElementById("progress");
-  const wm = document.getElementById("wm");
-  const heroWrap = document.querySelector(".hero .wrap");
+  const marq = document.getElementById("marq");
   const words = [...document.querySelectorAll("#words .w")];
   const wordsEl = document.getElementById("words");
-  const mobile = matchMedia("(max-width: 920px)").matches;
+  const stage = document.getElementById("stage");
   let marqX = 0, last = performance.now();
 
   function frame(t) {
     if (lenis) lenis.raf(t);
     const dt = Math.min(50, t - last); last = t;
-    const y = scrollYNow || scrollY;
+    const y = yNow || scrollY;
+    prog.style.transform = `scaleX(${y / Math.max(1, document.body.scrollHeight - innerHeight)})`;
 
-    // page progress
-    prog.style.transform = `scaleX(${y / (document.body.scrollHeight - innerHeight)})`;
-    // nav
-    document.getElementById("nav").classList.toggle("scrolled", y > 24);
-
-    if (window.GLBG) GLBG.render(t, y, velocity, mx, my);
     if (!reduced) {
-      // hero parallax out
-      if (heroWrap && y < innerHeight * 1.2) {
-        heroWrap.style.transform = `translateY(${y * 0.28}px)`;
-        heroWrap.style.opacity = Math.max(0, 1 - y / (innerHeight * 0.85));
-      }
-      // product window scale-in
-      if (stage) {
-        const r = stage.getBoundingClientRect();
-        const p = Math.min(1, Math.max(0, 1 - (r.top - innerHeight * 0.12) / (innerHeight * 0.7)));
-        const s = 0.9 + p * 0.1;
-        stage.style.transform = `scale(${s}) translateY(${(1 - p) * 40}px)`;
-        stage.style.opacity = 0.25 + p * 0.75;
-      }
-      // marquee: base drift + scroll velocity
       if (marq) {
-        marqX -= (0.045 + Math.min(3.2, Math.abs(velocity) * 0.10)) * dt;
+        marqX -= (0.05 + Math.min(3, Math.abs(velocity) * 0.09)) * dt;
         const half = marq.scrollWidth / 2;
         if (-marqX > half) marqX += half;
-        marq.style.transform = `translateX(${marqX}px)`;
+        marq.style.transform = `translate3d(${marqX}px,0,0)`;
       }
-      // statement words
       if (wordsEl) {
         const r = wordsEl.getBoundingClientRect();
         const p = Math.min(1, Math.max(0, (innerHeight * 0.85 - r.top) / (r.height + innerHeight * 0.3)));
         const lit = Math.floor(p * words.length * 1.15);
         words.forEach((w, i) => w.classList.toggle("lit", i < lit));
       }
-      // horizontal pinned travel
-      if (hs && track && !mobile) {
-        const start = hs.offsetTop;
-        const range = hs.offsetHeight - innerHeight;
-        const p = Math.min(1, Math.max(0, (y - start) / range));
-        const dist = track.scrollWidth - innerWidth + innerWidth * 0.12;
-        track.style.transform = `translate3d(${-p * dist}px, 0, 0)`;
-      }
-      // footer watermark parallax
-      if (wm) {
-        const r = wm.getBoundingClientRect();
-        if (r.top < innerHeight) wm.style.transform = `translateY(${20 - Math.min(1, (innerHeight - r.top) / innerHeight) * 24}%)`;
+      if (stage) {
+        const r = stage.getBoundingClientRect();
+        const p = Math.min(1, Math.max(0, 1 - (r.top - innerHeight * 0.1) / (innerHeight * 0.65)));
+        stage.style.transform = `scale(${0.94 + p * 0.06})`;
       }
     }
     requestAnimationFrame(frame);
   }
   requestAnimationFrame(frame);
-  if (reduced) { words.forEach((w) => w.classList.add("lit")); }
+  if (reduced) words.forEach((w) => w.classList.add("lit"));
 
-  /* ---------- live transcript demo ---------- */
+  /* live transcript demo — monochrome */
   const script = [
     { who: "them", label: "THEM 1", text: "Walk me through how the rollout would work for a team like ours." },
     { who: "you", label: "YOU", text: "Start with the pilot group — the March numbers make the case for us." },
