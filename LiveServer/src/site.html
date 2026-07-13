@@ -193,7 +193,35 @@
   .stoppill i { width: 8px; height: 8px; background: #ff6961; border-radius: 2px; }
   .hudgrid { display: grid; grid-template-columns: 1.15fr 1px 1fr; min-height: 380px; }
   .vdiv { background: var(--g1); }
-  .ccol { display: flex; flex-direction: column; }
+  .ccol { display: flex; flex-direction: column; position: relative; }
+  /* Live Transcript panel — replica of the real right-column swap */
+  .ltcol { position: absolute; inset: 0; z-index: 3; display: flex; flex-direction: column; background: #101216; opacity: 0; visibility: hidden; transition: opacity .3s; }
+  .ltcol.on { opacity: 1; visibility: visible; }
+  .lthead { display: flex; align-items: center; gap: 8px; padding: 11px 14px; border-bottom: 1px solid var(--g1); }
+  .lthead b { font-size: 12px; color: #e8eaf0; font-weight: 700; }
+  .lttime { font-family: var(--mono); font-size: 11px; color: #8a90a0; }
+  .ltend { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; border: 1px solid rgba(255,69,58,.5); background: rgba(255,69,58,.16); color: #ff6961; border-radius: 999px; padding: 4px 12px; font-size: 10.5px; font-weight: 700; visibility: hidden; }
+  .ltend i { width: 7px; height: 7px; background: #ff6961; border-radius: 1.5px; }
+  .ltdot { width: 8px; height: 8px; border-radius: 50%; background: #6b7280; }
+  .ltdot.amber { background: #ff9f0a; box-shadow: 0 0 7px #ff9f0a; }
+  .ltdot.live { background: #30d158; box-shadow: 0 0 7px #30d158; }
+  .ltbody { flex: 1; display: flex; flex-direction: column; padding: 16px 18px; }
+  .ltv { display: none; }
+  #lt-idle, #lt-code { flex: 1; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; }
+  #lt-idle svg { width: 30px; height: 30px; color: #8a90a0; }
+  #lt-idle h6 { font-size: 14.5px; color: #fff; font-weight: 700; }
+  #lt-idle p, #lt-code p { font-size: 11.5px; color: #8a90a0; line-height: 1.6; max-width: 300px; }
+  .ltcreate { display: inline-flex; margin-top: 6px; border: 1px solid rgba(48,209,88,.5); background: rgba(48,209,88,.16); color: #30d158; border-radius: 999px; padding: 7px 16px; font-size: 12px; font-weight: 700; }
+  .ltlbl { font-size: 11px; color: #8a90a0; }
+  .ltcode { font-family: var(--mono); font-size: clamp(30px, 3vw, 42px); letter-spacing: .1em; color: #fff; font-weight: 800; }
+  .ltcopy { display: inline-flex; align-items: center; gap: 7px; background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14); color: #e8eaf0; border-radius: 9px; padding: 7px 15px; font-size: 11.5px; font-weight: 700; }
+  .ltwait { font-size: 10.5px; color: #6f7480; }
+  .ltrow { display: flex; gap: 10px; align-items: flex-start; }
+  .ltrow .txt { font-size: 13px; color: #e8eaf0; line-height: 1.55; }
+  .ltfoot { display: flex; align-items: center; border-top: 1px solid var(--g1); padding: 10px 14px; font-size: 10.5px; color: #6f7480; }
+  .ltmeter { display: none; gap: 8px; align-items: center; font-family: var(--mono); font-size: 9.5px; letter-spacing: .1em; color: #8a90a0; }
+  .ltmeter .cdot { background: #30d158; }
+  .ltmeter .mbar i { background: #ff9f0a; animation: none; transition: width .2s; }
   .cbar { display: flex; gap: 8px; align-items: center; padding: 12px 14px; border-bottom: 1px solid var(--g1); }
   .chip { font-family: var(--mono); font-size: 9.5px; letter-spacing: .08em; padding: 5px 11px; border-radius: 999px; border: 1px solid var(--g1); color: var(--g3); }
   .chip.hot { background: var(--white); color: var(--black); border-color: var(--white); font-weight: 700; }
@@ -444,7 +472,6 @@
                 <div class="trow" data-row="0"><span class="ttag them">THEM 1</span><span class="txt"></span></div>
                 <div class="trow" data-row="1"><span class="ttag you">YOU</span><span class="txt"></span></div>
                 <div class="trow" data-row="2"><span class="ttag them">THEM 2</span><span class="txt"></span></div>
-                <div class="trow" data-row="3"><span class="ttag guest">GUEST</span><span class="txt"></span></div>
                 <div class="idlehint" id="idlehint">Press Start before your meeting.<br>Your voice and the meeting audio are transcribed live.</div>
               </div>
               <div class="vdiv"></div>
@@ -467,6 +494,34 @@
                   </div>
                 </div>
                 <div class="askrow">✦ Ask AI about the meeting…</div>
+                <div class="ltcol" id="lt">
+                  <div class="lthead">
+                    <span class="ltdot" id="lt-dot"></span><b>Live Transcript</b><span class="lttime" id="lt-time"></span>
+                    <span class="ltend" id="lt-end"><i></i>End</span>
+                  </div>
+                  <div class="ltbody">
+                    <div class="ltv" id="lt-idle">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M8.5 8.5a5 5 0 0 0 0 7"/><path d="M5.5 5.5a9 9 0 0 0 0 13"/><path d="M15.5 8.5a5 5 0 0 1 0 7"/><path d="M18.5 5.5a9 9 0 0 1 0 13"/><circle cx="12" cy="12" r="1.6" fill="currentColor"/></svg>
+                      <h6>Hear someone who isn't in the room.</h6>
+                      <p>Create a code and share it. When they enter it on the join page, everything they say appears here — live.</p>
+                      <span class="ltcreate" id="lt-create">+ Create code</span>
+                    </div>
+                    <div class="ltv" id="lt-code">
+                      <span class="ltlbl">Share this code</span>
+                      <b class="ltcode">847 291</b>
+                      <p>They open udito…/join and enter it.<br>Their phone browser is enough — nothing to install.</p>
+                      <span class="ltcopy" id="lt-copy">⧉ Copy invite</span>
+                      <span class="ltwait">Waiting for them to join… (code expires in 10 minutes)</span>
+                    </div>
+                    <div class="ltv" id="lt-guestrow">
+                      <div class="ltrow"><span class="ttag guest">GUEST</span><span class="txt" id="lt-guesttxt"></span></div>
+                    </div>
+                  </div>
+                  <div class="ltfoot">
+                    <span id="lt-foot">One-way: only their voice is transcribed.</span>
+                    <span class="ltmeter" id="lt-meter"><i class="cdot"></i> GUEST <span class="mbar"><i id="lt-mbar"></i></span></span>
+                  </div>
+                </div>
               </div>
             </div>
             <div class="hfoot">
@@ -532,9 +587,9 @@
       <div class="cap"><h4>Click STAR.</h4><p>The same answer, structured: Situation, Task, Action, Result.</p></div>
       <div class="cap"><h4>They can't see it.</h4><p>Share your screen — UDITO isn't in it. Not on Zoom, not in a recording. Only your eyes.</p></div>
       <div class="cap"><h4>Stop. Saved.</h4><p>The transcript is already a file on your Mac.</p></div>
-      <div class="cap"><h4>Now — someone far away.</h4><p>Open a live transcript session. UDITO mints a code.</p></div>
-      <div class="cap"><h4>They enter the code.</h4><p>Any phone browser. No app, no account.</p></div>
-      <div class="cap"><h4>Connected.</h4><p>They speak there — it lands here. Watch the latency.</p></div>
+      <div class="cap"><h4>Now — someone far away.</h4><p>Click the beacon. The copilot flips to Live Transcript.</p></div>
+      <div class="cap"><h4>They enter the code.</h4><p>UDITO mints it; they type it on their phone. No app, no account.</p></div>
+      <div class="cap"><h4>Connected.</h4><p>They speak there — it lands in the panel. Watch the latency.</p></div>
       <div class="cap"><h4>End it. The code dies.</h4><p>Nothing left running anywhere.</p></div>
       <div class="cap"><h4>Or broadcast it.</h4><p>One link — anyone watches your transcript arrive, live.</p></div>
       <div class="cap"><h4>They see what you see.</h4><p>Word by word, in their browser.</p></div>
@@ -544,7 +599,7 @@
     <div class="tour-m wrap">
       <div><h4>The transcript, live</h4><p>Every word as it's spoken. You in blue, them in orange.</p></div>
       <div><h4>Always on top</h4><p>Switch apps freely — the window follows you everywhere.</p></div>
-      <div><h4>A faraway voice, in the room</h4><p>A six-digit code streams a phone into your transcript.</p></div>
+      <div><h4>A faraway voice, in the room</h4><p>A six-digit code streams their phone into the Live Transcript panel.</p></div>
       <div><h4>Ask while it happens</h4><p>The copilot answers in your voice — regular or STAR format.</p></div>
       <div><h4>Invisible to everyone else</h4><p>Screen shares and recordings never see it. Only your eyes do.</p></div>
       <div><h4>Share it, live</h4><p>One link — anyone watches the words arrive. End it, it's gone.</p></div>
@@ -766,7 +821,7 @@
     curToStar: .3788, clickStar: .3976, starDone: .4353,
     ghost0: .4466,  ghost1: .5031,
     curToStop: .5125, clickStop: .5341,
-    curToGuest: .5464, clickGuest: .5652, guestIn: .5915,
+    curToGuest: .5464, clickGuest: .5652, ltCreate: .5850, guestIn: .5915,
     code0: .6009,   code1: .6442,     clickJoin: .6574,
     beamOn: .6706,  guestSay: .6819,  guestSaid: .7402,
     curToGuest2: .7534, clickGuest2: .7703, guestOut: .7910,
@@ -777,7 +832,7 @@
   };
   // caption index → starts at these marks
   const CAPMARKS = [0, M.curToStart, M.talk0, M.zoomHdr, M.follow0, M.hotkey, M.hotkeyEnd, M.curToStar, M.ghost0, M.curToStop,
-    M.curToGuest, M.code0, M.beamOn, M.curToGuest2, M.curToShare, M.viewIn, M.curToLib, M.libOut];
+    M.curToGuest, M.ltCreate, M.beamOn, M.curToGuest2, M.curToShare, M.viewIn, M.curToLib, M.libOut];
 
   const seg = (p, a, b) => Math.min(1, Math.max(0, (p - a) / Math.max(1e-6, b - a)));
   const ease = (x) => 1 - Math.pow(1 - x, 3);
@@ -799,6 +854,7 @@
       cr, panel: c("#panel"), demo: c("#demo"), live: c("#p-live"), copilot: c("#p-copilot"),
       answer: c("#p-answer"), star: c("#chip-star"), act: c("#actpill"), guesticon: c("#p-guesticon"),
       share: c("#p-share"), lib: c("#p-lib"),
+      ltcreate: c("#lt-create"), ltcopy: c("#lt-copy"), ltend: c("#lt-end"),
       guestW: document.querySelector("#win-guest").offsetWidth,
       viewW: document.querySelector("#win-view").offsetWidth,
     };
@@ -844,7 +900,13 @@
     { t: M.clickStop - .008, at: "act", click: M.clickStop },
     { t: M.clickStop + .012, at: "act" },
     { t: M.clickGuest - .007, at: "guesticon", click: M.clickGuest },
-    { t: M.clickGuest2 + .012, at: "guesticon", click: M.clickGuest2 },
+    { t: M.clickGuest + .010, at: "guesticon" },
+    { t: M.ltCreate - .007, at: "ltcreate", click: M.ltCreate },
+    { t: M.ltCreate + .015, at: "ltcreate" },
+    { t: M.clickJoin, at: "ltcopy" },
+    { t: M.curToGuest2, at: "ltcopy" },
+    { t: M.clickGuest2 - .007, at: "ltend", click: M.clickGuest2 },
+    { t: M.clickGuest2 + .012, at: "ltend" },
     { t: M.clickShare - .007, at: "share", click: M.clickShare },
     { t: M.curToLib, at: "share" },
     { t: M.clickLib - .007, at: "lib", click: M.clickLib },
@@ -871,7 +933,6 @@
     typeRow(0, seg(p, M.talk0, M.talk1));
     typeRow(1, seg(p, M.talk1, M.talk2));
     typeRow(2, seg(p, M.talk2, M.talkEnd));
-    typeRow(3, p >= M.beamOn ? seg(p, M.guestSay, M.guestSaid) : 0);
     // hotkey + copilot
     setCls("hotkey", "on", p >= M.hotkey && p < M.hotkeyEnd);
     setSty("exq", "opacity", p >= M.hotkeyEnd - .01 ? "1" : "0");
@@ -894,8 +955,26 @@
     const gh = ease(seg(p, M.ghost0, M.ghost0 + .015)) - ease(seg(p, M.ghost1 - .015, M.ghost1));
     setSty("panel", "opacity", String(1 - gh));
     setCls("sharepill", "on", gh > .5);
+    // live transcript panel — the right column swaps, exactly like the app
+    const ltOn = p >= M.clickGuest && p < M.guestOut;
+    const ltCode = p >= M.ltCreate && p < M.clickJoin;
+    const ltLive = p >= M.clickJoin && p < M.clickGuest2;
+    setCls("lt", "on", ltOn);
+    setSty("lt-idle", "display", ltOn && !ltCode && !ltLive ? "flex" : "none");
+    setSty("lt-code", "display", ltCode ? "flex" : "none");
+    setSty("lt-guestrow", "display", ltLive ? "block" : "none");
+    setCls("lt-dot", "amber", ltCode);
+    setCls("lt-dot", "live", ltLive);
+    setTxt("lt-time", ltLive ? "00:" + String(2 + Math.floor(seg(p, M.clickJoin, M.clickGuest2) * 22)).padStart(2, "0") : "");
+    setSty("lt-end", "visibility", ltCode || ltLive ? "visible" : "hidden");
+    const gw = p >= M.guestSay ? seg(p, M.guestSay - .012, M.guestSaid - .012) : 0;
+    const gwords = GUESTSAY.split(" ");
+    setTxt("lt-guesttxt", gwords.slice(0, Math.round(gwords.length * Math.min(1, gw))).join(" "));
+    setSty("lt-foot", "display", ltLive ? "none" : "block");
+    setSty("lt-meter", "display", ltLive ? "flex" : "none");
+    setSty("lt-mbar", "width", ltLive && p < M.guestSaid ? (20 + 55 * Math.abs(Math.sin(p * 320))) + "%" : "10%");
     // header guest icon + footer share label
-    setCls("p-guesticon", "hot", p >= M.clickGuest && p < M.clickGuest2);
+    setCls("p-guesticon", "hot", ltOn);
     setCls("p-share", "hot", p >= M.clickShare && p < M.viewOut);
     setTxt("sharelabel", p >= M.viewIn && p < M.viewOut ? "LIVE · 2 WATCHING" : "SHARE LIVE");
 
