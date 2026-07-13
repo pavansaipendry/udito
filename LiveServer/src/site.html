@@ -87,10 +87,19 @@
 
   /* ============ PRODUCT ZOOM TOUR ============ */
   .scene-head { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid var(--g1); padding-top: 20px; margin-bottom: 7vh; color: var(--g3); }
-  .tour { height: 1600vh; position: relative; }
+  .tour { height: 1700vh; position: relative; }
   .camwrap { will-change: transform; position: relative; }
   .splitrow { display: flex; align-items: center; justify-content: center; gap: 3vw; position: relative; }
-  .panelbox { transition: none; }
+  .panelbox { transition: none; position: relative; z-index: 2; }
+  .panelbox .window { box-shadow: 0 36px 110px rgba(0,0,0,.75); }
+  /* backdrop app windows for the always-on-top beat */
+  .appwin { position: absolute; left: -5%; top: 50%; width: 110%; height: 116%; transform: translateY(-50%); z-index: 1; opacity: 0;
+    border-radius: 16px; border: 1px solid rgba(255,255,255,.11); background: #0a0c0f; box-shadow: 0 30px 90px rgba(0,0,0,.55); overflow: hidden; }
+  .awbar { display: flex; align-items: center; gap: 6px; padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .awbar span { width: 10px; height: 10px; border-radius: 50%; background: #23262c; }
+  .awbar em { font-family: var(--mono); font-style: normal; font-size: 11px; color: #7d838f; margin-left: 8px; }
+  .awbody { padding: 30px 24px; display: flex; flex-direction: column; gap: 16px; }
+  .awbody i { display: block; height: 12px; border-radius: 6px; background: rgba(255,255,255,.05); }
   .idlehint { color: var(--g2); font-size: 13px; text-align: center; margin: auto; line-height: 1.7; }
   .actpill { display: inline-flex; align-items: center; gap: 7px; border-radius: 999px; padding: 5px 14px; font-size: 11.5px; font-weight: 700;
     border: 1px solid rgba(48,209,88,.5); background: rgba(48,209,88,.16); color: #30d158; }
@@ -406,6 +415,14 @@
     <span class="stepnum" id="stepnum">01</span>
     <div class="camwrap" id="camwrap">
       <div class="splitrow">
+        <div class="appwin" id="appwin-a" aria-hidden="true">
+          <div class="awbar"><span></span><span></span><span></span><em>Keynote — Rollout deck.key</em></div>
+          <div class="awbody"><i style="width:38%"></i><i style="width:72%"></i><i style="width:55%"></i><i style="width:64%"></i></div>
+        </div>
+        <div class="appwin" id="appwin-b" aria-hidden="true">
+          <div class="awbar"><span></span><span></span><span></span><em>Chrome — March report · numbers.q1</em></div>
+          <div class="awbody"><i style="width:64%"></i><i style="width:46%"></i><i style="width:70%"></i><i style="width:52%"></i></div>
+        </div>
         <div class="panelbox" id="panelbox">
           <div class="window" id="panel">
             <div class="titlebar">
@@ -508,7 +525,8 @@
       <div class="cap"><h4>This is UDITO.</h4><p>Exactly what you download. Nothing happens until you say so.</p></div>
       <div class="cap"><h4>Click Start.</h4><p>That's the whole setup.</p></div>
       <div class="cap"><h4>They talk. You talk.</h4><p>Every word lands, labeled — half a second behind reality.</p></div>
-      <div class="cap"><h4>It's listening.</h4><p>Your mic and everything your Mac plays — every tab, every app, even in the background. Nothing joins the call.</p></div>
+      <div class="cap"><h4>It's listening.</h4><p>Your mic and the meeting audio. Nothing joins the call.</p></div>
+      <div class="cap"><h4>It follows you.</h4><p>Open your deck, your notes, anything — the window rides on top of every app. The words never leave your eyes.</p></div>
       <div class="cap"><h4>One hotkey → AI.</h4><p>Their last question goes straight to the copilot.</p></div>
       <div class="cap"><h4>The answer, in your voice.</h4><p>Ready to say out loud.</p></div>
       <div class="cap"><h4>Click STAR.</h4><p>The same answer, structured: Situation, Task, Action, Result.</p></div>
@@ -524,7 +542,8 @@
       <div class="cap"><h4>That's UDITO.</h4><p>Yours. On your Mac. Nowhere else.</p></div>
     </div>
     <div class="tour-m wrap">
-      <div><h4>The transcript, live</h4><p>Every word as it's spoken — any tab, any app, even in the background. You in blue, them in orange.</p></div>
+      <div><h4>The transcript, live</h4><p>Every word as it's spoken. You in blue, them in orange.</p></div>
+      <div><h4>Always on top</h4><p>Switch apps freely — the window follows you everywhere.</p></div>
       <div><h4>A faraway voice, in the room</h4><p>A six-digit code streams a phone into your transcript.</p></div>
       <div><h4>Ask while it happens</h4><p>The copilot answers in your voice — regular or STAR format.</p></div>
       <div><h4>Invisible to everyone else</h4><p>Screen shares and recordings never see it. Only your eyes do.</p></div>
@@ -739,24 +758,25 @@
 
   // ---- the script: timeline marks (fractions of the tour) ----
   const M = {
-    idle: 0,        curToStart: .020, clickStart: .045,
-    talk0: .055,    talk1: .105,      talk2: .150,   talkEnd: .185,
-    zoomHdr: .195,  hdrEnd: .235,
-    hotkey: .245,   hotkeyEnd: .265,  ansTyped: .330,
-    curToStar: .340, clickStar: .360, starDone: .400,
-    ghost0: .412,   ghost1: .472,
-    curToStop: .482, clickStop: .505,
-    curToGuest: .518, clickGuest: .538, guestIn: .566,
-    code0: .576,    code1: .622,      clickJoin: .636,
-    beamOn: .650,   guestSay: .662,   guestSaid: .724,
-    curToGuest2: .738, clickGuest2: .756, guestOut: .778,
-    curToShare: .790, clickShare: .806, viewIn: .828, viewHold: .864,
-    viewOut: .880,
-    curToLib: .888, clickLib: .903,  libIn: .920,  libHold: .956,
-    libOut: .970,  end: 1,
+    idle: 0,        curToStart: .0188, clickStart: .0424,
+    talk0: .0518,   talk1: .0988,     talk2: .1412,  talkEnd: .1741,
+    zoomHdr: .1835, hdrEnd: .2212,
+    follow0: .2250, follow1: .2840,
+    hotkey: .2894,  hotkeyEnd: .3082, ansTyped: .3694,
+    curToStar: .3788, clickStar: .3976, starDone: .4353,
+    ghost0: .4466,  ghost1: .5031,
+    curToStop: .5125, clickStop: .5341,
+    curToGuest: .5464, clickGuest: .5652, guestIn: .5915,
+    code0: .6009,   code1: .6442,     clickJoin: .6574,
+    beamOn: .6706,  guestSay: .6819,  guestSaid: .7402,
+    curToGuest2: .7534, clickGuest2: .7703, guestOut: .7910,
+    curToShare: .8023, clickShare: .8174, viewIn: .8381, viewHold: .8720,
+    viewOut: .8871,
+    curToLib: .8946, clickLib: .9087, libIn: .9247, libHold: .9586,
+    libOut: .9718, end: 1,
   };
   // caption index → starts at these marks
-  const CAPMARKS = [0, M.curToStart, M.talk0, M.zoomHdr, M.hotkey, M.hotkeyEnd, M.curToStar, M.ghost0, M.curToStop,
+  const CAPMARKS = [0, M.curToStart, M.talk0, M.zoomHdr, M.follow0, M.hotkey, M.hotkeyEnd, M.curToStar, M.ghost0, M.curToStop,
     M.curToGuest, M.code0, M.beamOn, M.curToGuest2, M.curToShare, M.viewIn, M.curToLib, M.libOut];
 
   const seg = (p, a, b) => Math.min(1, Math.max(0, (p - a) / Math.max(1e-6, b - a)));
@@ -863,6 +883,13 @@
     [...document.querySelectorAll("#ans-star .srow")].forEach((r, i) => {
       r.style.opacity = seg(p, M.clickStar + i * .008, M.clickStar + .012 + i * .008);
     });
+    // always-on-top: apps switch behind, the window doesn't move
+    const fA = ease(seg(p, M.follow0, M.follow0 + .010)) - ease(seg(p, M.follow0 + .027, M.follow0 + .037));
+    const fB = ease(seg(p, M.follow0 + .027, M.follow0 + .037)) - ease(seg(p, M.follow1 - .008, M.follow1));
+    setSty("appwin-a", "opacity", String(fA));
+    setSty("appwin-b", "opacity", String(fB));
+    setSty("appwin-a", "transform", "translateY(calc(-50% + " + (16 * (1 - fA)) + "px))");
+    setSty("appwin-b", "transform", "translateY(calc(-50% + " + (16 * (1 - fB)) + "px))");
     // screen-share ghost: their view — the app simply isn't there
     const gh = ease(seg(p, M.ghost0, M.ghost0 + .015)) - ease(seg(p, M.ghost1 - .015, M.ghost1));
     setSty("panel", "opacity", String(1 - gh));
@@ -943,7 +970,7 @@
     };
     if (p >= M.talk0 - .01 && p < M.zoomHdr) shot = zoomTo(G.demo, M.talk0 - .01, M.zoomHdr - .02, true, 1.5);
     // header framed at the upper third, not dead-center (no empty sky above)
-    else if (p >= M.zoomHdr && p < M.hotkey - .005) shot = zoomTo({ ...G.live, y: G.live.y + 130 }, M.zoomHdr, M.hotkey - .025, true, 2.6);
+    else if (p >= M.zoomHdr && p < M.follow0 - .003) shot = zoomTo({ ...G.live, y: G.live.y + 130 }, M.zoomHdr, M.follow0 - .023, true, 2.6);
     else if (p >= M.hotkey - .005 && p < M.ghost0) shot = zoomTo(G.copilot, M.hotkey - .005, M.ghost0 - .02, true, 1.55);
     cam.style.transform = "translate3d(" + shot.x + "px," + shot.y + "px,0) scale(" + shot.s + ")";
 
