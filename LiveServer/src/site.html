@@ -87,7 +87,7 @@
 
   /* ============ PRODUCT ZOOM TOUR ============ */
   .scene-head { display: flex; align-items: baseline; justify-content: space-between; border-top: 1px solid var(--g1); padding-top: 20px; margin-bottom: 7vh; color: var(--g3); }
-  .tour { height: 1500vh; position: relative; }
+  .tour { height: 1600vh; position: relative; }
   .camwrap { will-change: transform; position: relative; }
   .splitrow { display: flex; align-items: center; justify-content: center; gap: 3vw; position: relative; }
   .panelbox { transition: none; }
@@ -151,6 +151,11 @@
   .hotkey { position: absolute; z-index: 20; left: 50%; top: 18%; transform: translateX(-50%) scale(.9); opacity: 0; transition: opacity .25s, transform .25s;
     border: 1px solid rgba(255,255,255,.4); border-bottom-width: 3px; background: rgba(10,10,10,.85); border-radius: 10px; padding: 10px 18px; font-size: 16px !important; color: #fff; }
   .hotkey.on { opacity: 1; transform: translateX(-50%) scale(1); }
+  .sharepill { position: absolute; z-index: 20; left: 50%; top: 18%; transform: translateX(-50%) scale(.9); opacity: 0; transition: opacity .25s, transform .25s;
+    display: flex; align-items: center; gap: 9px; border: 1px solid rgba(255,255,255,.3); background: rgba(10,10,10,.85); border-radius: 999px;
+    padding: 10px 18px; font-size: 11px !important; letter-spacing: .14em; color: #fff; }
+  .sharepill i { width: 8px; height: 8px; border-radius: 50%; background: #30d158; box-shadow: 0 0 8px #30d158; }
+  .sharepill.on { opacity: 1; transform: translateX(-50%) scale(1); }
   .guestpill { display: flex; align-items: center; gap: 6px; margin-left: auto; font-family: var(--mono); font-size: 9.5px; letter-spacing: .14em; color: var(--white); }
   .guestpill svg { width: 13px; height: 13px; }
   .titlebar .rec { margin-left: 14px; }
@@ -497,6 +502,7 @@
       <div class="cursor" id="cur"><svg viewBox="0 0 24 24"><path d="M5 3l14 8-6.5 1.5L9 19z" fill="#fff" stroke="#000" stroke-width="1.4"/></svg><i id="ripple"></i></div>
     </div>
     <div class="hotkey mono" id="hotkey">⌘⇧A</div>
+    <div class="sharepill mono" id="sharepill"><i></i>SCREEN SHARE — THEIR VIEW</div>
     <div class="tscrim" aria-hidden="true"></div>
     <div class="captions" id="captions" aria-hidden="true">
       <div class="cap"><h4>This is UDITO.</h4><p>Exactly what you download. Nothing happens until you say so.</p></div>
@@ -506,6 +512,7 @@
       <div class="cap"><h4>One hotkey → AI.</h4><p>Their last question goes straight to the copilot.</p></div>
       <div class="cap"><h4>The answer, in your voice.</h4><p>Ready to say out loud.</p></div>
       <div class="cap"><h4>Click STAR.</h4><p>The same answer, structured: Situation, Task, Action, Result.</p></div>
+      <div class="cap"><h4>They can't see it.</h4><p>Share your screen — UDITO isn't in it. Not on Zoom, not in a recording. Only your eyes.</p></div>
       <div class="cap"><h4>Stop. Saved.</h4><p>The transcript is already a file on your Mac.</p></div>
       <div class="cap"><h4>Now — someone far away.</h4><p>Open a live transcript session. UDITO mints a code.</p></div>
       <div class="cap"><h4>They enter the code.</h4><p>Any phone browser. No app, no account.</p></div>
@@ -520,6 +527,7 @@
       <div><h4>The transcript, live</h4><p>Every word as it's spoken. You in blue, them in orange.</p></div>
       <div><h4>A faraway voice, in the room</h4><p>A six-digit code streams a phone into your transcript.</p></div>
       <div><h4>Ask while it happens</h4><p>The copilot answers in your voice — regular or STAR format.</p></div>
+      <div><h4>Invisible to everyone else</h4><p>Screen shares and recordings never see it. Only your eyes do.</p></div>
       <div><h4>Share it, live</h4><p>One link — anyone watches the words arrive. End it, it's gone.</p></div>
       <div><h4>Yours, forever</h4><p>Saved as files on your Mac, with summary and action items.</p></div>
     </div>
@@ -736,18 +744,19 @@
     zoomHdr: .195,  hdrEnd: .235,
     hotkey: .245,   hotkeyEnd: .265,  ansTyped: .330,
     curToStar: .340, clickStar: .360, starDone: .400,
-    curToStop: .415, clickStop: .440,
-    curToGuest: .455, clickGuest: .475, guestIn: .505,
-    code0: .515,    code1: .565,      clickJoin: .580,
-    beamOn: .595,   guestSay: .610,   guestSaid: .680,
-    curToGuest2: .695, clickGuest2: .715, guestOut: .740,
-    curToShare: .755, clickShare: .775, viewIn: .800, viewHold: .845,
-    viewOut: .865,
-    curToLib: .875, clickLib: .895,  libIn: .915,  libHold: .955,
+    ghost0: .412,   ghost1: .472,
+    curToStop: .482, clickStop: .505,
+    curToGuest: .518, clickGuest: .538, guestIn: .566,
+    code0: .576,    code1: .622,      clickJoin: .636,
+    beamOn: .650,   guestSay: .662,   guestSaid: .724,
+    curToGuest2: .738, clickGuest2: .756, guestOut: .778,
+    curToShare: .790, clickShare: .806, viewIn: .828, viewHold: .864,
+    viewOut: .880,
+    curToLib: .888, clickLib: .903,  libIn: .920,  libHold: .956,
     libOut: .970,  end: 1,
   };
   // caption index → starts at these marks
-  const CAPMARKS = [0, M.curToStart, M.talk0, M.zoomHdr, M.hotkey, M.hotkeyEnd, M.curToStar, M.curToStop,
+  const CAPMARKS = [0, M.curToStart, M.talk0, M.zoomHdr, M.hotkey, M.hotkeyEnd, M.curToStar, M.ghost0, M.curToStop,
     M.curToGuest, M.code0, M.beamOn, M.curToGuest2, M.curToShare, M.viewIn, M.curToLib, M.libOut];
 
   const seg = (p, a, b) => Math.min(1, Math.max(0, (p - a) / Math.max(1e-6, b - a)));
@@ -854,6 +863,10 @@
     [...document.querySelectorAll("#ans-star .srow")].forEach((r, i) => {
       r.style.opacity = seg(p, M.clickStar + i * .008, M.clickStar + .012 + i * .008);
     });
+    // screen-share ghost: their view — the app simply isn't there
+    const gh = ease(seg(p, M.ghost0, M.ghost0 + .015)) - ease(seg(p, M.ghost1 - .015, M.ghost1));
+    setSty("panel", "opacity", String(1 - gh));
+    setCls("sharepill", "on", gh > .5);
     // header guest icon + footer share label
     setCls("p-guesticon", "hot", p >= M.clickGuest && p < M.clickGuest2);
     setCls("p-share", "hot", p >= M.clickShare && p < M.viewOut);
@@ -931,7 +944,7 @@
     if (p >= M.talk0 - .01 && p < M.zoomHdr) shot = zoomTo(G.demo, M.talk0 - .01, M.zoomHdr - .02, true, 1.5);
     // header framed at the upper third, not dead-center (no empty sky above)
     else if (p >= M.zoomHdr && p < M.hotkey - .005) shot = zoomTo({ ...G.live, y: G.live.y + 130 }, M.zoomHdr, M.hotkey - .025, true, 2.6);
-    else if (p >= M.hotkey - .005 && p < M.curToStop) shot = zoomTo(G.copilot, M.hotkey - .005, M.curToStop - .02, true, 1.55);
+    else if (p >= M.hotkey - .005 && p < M.ghost0) shot = zoomTo(G.copilot, M.hotkey - .005, M.ghost0 - .02, true, 1.55);
     cam.style.transform = "translate3d(" + shot.x + "px," + shot.y + "px,0) scale(" + shot.s + ")";
 
     // ---------- cursor ----------
