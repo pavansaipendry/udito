@@ -15,6 +15,10 @@ Ears app     ◀──JSON results───────┘
 - The Deepgram key is sent by the app at session creation and lives only in
   the session's storage until the session ends — no secrets deployed here.
 - Finals carry sequence numbers; the app replays missed ones on reconnect.
+- The guest can also type chat messages — plain text or code (`kind: "code"`
+  renders as a highlighted code block in the app). Chat shares the finals'
+  seq counter, so missed messages replay on app reconnect too. One-way:
+  guest → app only.
 - Guest page (`src/guest.html`) is served from `/`: 16 kHz linear16 PCM via
   AudioWorklet on every browser (raw PCM is resumable at any byte — no
   container-header fragility), with a ~20 s offline buffer so dropouts delay
@@ -39,7 +43,9 @@ is also the page guests open.
 npx wrangler dev --local --port 8787
 DEEPGRAM_API_KEY=… node test/e2e.mjs            # full path incl. real Deepgram
 node test/e2e.mjs https://ears-live.<you>.workers.dev   # against production
+node test/chat-e2e.mjs                          # guest chat path, no key needed
 ```
 
 The e2e test synthesizes speech with `say`, streams it like a guest, and
 asserts the transcript reaches the app socket, reconnect replay included.
+The chat test covers text + code messages, delivery acks, and offline replay.

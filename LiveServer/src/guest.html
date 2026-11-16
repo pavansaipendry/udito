@@ -58,6 +58,33 @@
   #mute.muted { background: #b3541e; }
   #leave { background: #33241f; color: #ff6b6b; }
 
+  /* Chat to the host (one-way: only they see it) */
+  #chatLog { display: flex; flex-direction: column; gap: 8px; max-height: 34vh; overflow-y: auto; }
+  .msg {
+    align-self: flex-end; max-width: 92%;
+    background: #1b2c47; border: 1px solid #2c4470; border-radius: 12px 12px 4px 12px;
+    padding: 8px 12px; font-size: 14px; white-space: pre-wrap; word-break: break-word;
+  }
+  .msg.pending { opacity: .55; }
+  .msg.code { width: 100%; max-width: 100%; padding: 0; background: #10131b; border-color: #262c3d; border-radius: 10px; }
+  .msg.code .codeHead {
+    display: flex; justify-content: space-between; gap: 8px;
+    font-size: 11px; color: #8a90a0; padding: 6px 10px; border-bottom: 1px solid #232838;
+  }
+  .msg.code pre {
+    margin: 0; padding: 10px 12px; overflow-x: auto; tab-size: 4;
+    font: 12.5px/1.5 ui-monospace, "SF Mono", Menlo, monospace; color: #dbe2f0;
+  }
+  .chatRow { display: flex; gap: 8px; align-items: flex-end; }
+  #chatInput {
+    flex: 1; resize: none; overflow-y: auto; max-height: 40vh;
+    font-size: 16px; line-height: 1.4; padding: 11px 14px;
+  }
+  #chatInput.code { font-family: ui-monospace, "SF Mono", Menlo, monospace; white-space: pre; overflow-x: auto; }
+  .chatRow button { flex: 0 0 auto; padding: 12px 14px; font-size: 14px; }
+  #chatMode { background: #232838; color: #8a90a0; font-family: ui-monospace, "SF Mono", Menlo, monospace; }
+  #chatMode.on { color: #4a9df8; box-shadow: inset 0 0 0 1px #2f81f7; }
+
   /* Ended screen */
   #ended { margin-top: 18vh; text-align: center; display: flex; flex-direction: column; gap: 10px; }
   #ended .big { font-size: 40px; }
@@ -68,7 +95,7 @@
   <section id="join">
     <div>
       <h1><span class="dot"></span>Live Transcript</h1>
-      <p class="sub">Enter the 6-digit code you were given. Your voice will be transcribed live for the person who sent it.</p>
+      <p class="sub">Enter the 6-digit code you were given. Your voice is transcribed live for the person who sent it — and you can send them text or code too.</p>
     </div>
     <input id="code" inputmode="numeric" autocomplete="one-time-code" maxlength="7" placeholder="000000">
     <input id="name" maxlength="40" placeholder="Your name (optional)">
@@ -83,6 +110,12 @@
       <div class="meter"><div id="level"></div></div>
     </div>
     <div id="transcript"><span class="placeholder">Start talking — your words appear here as the other person sees them.</span></div>
+    <div id="chatLog" class="hidden"></div>
+    <div class="chatRow">
+      <button id="chatMode" title="Send as a code block">&lt;/&gt;</button>
+      <textarea id="chatInput" rows="1" placeholder="Message — only they see it"></textarea>
+      <button id="chatSend">Send</button>
+    </div>
     <div class="controls">
       <button id="mute">Mute</button>
       <button id="leave">Leave</button>
@@ -119,6 +152,13 @@ const state = {
   muted: false,
 };
 
+const chat = {
+  mode: "text",     // "text" | "code" — code arrives on their side as a highlighted block
+  nextId: 1,
+  queue: [],        // JSON payloads waiting for the socket, like the audio queue
+  TEXT_CAP: 32000,  // matches the relay's cap
+};
+
 $("code").addEventListener("input", () => {
   const d = $("code").value.replace(/\D/g, "").slice(0, 6);
   $("code").value = d;
@@ -127,6 +167,18 @@ $("joinBtn").addEventListener("click", join);
 $("name").addEventListener("keydown", (e) => { if (e.key === "Enter") join(); });
 $("mute").addEventListener("click", toggleMute);
 $("leave").addEventListener("click", () => endLocally("You left the session."));
+$("chatMode").addEventListener("click", () => setChatMode(chat.mode === "text" ? "code" : "text"));
+$("chatSend").addEventListener("click", sendChat);
+$("chatInput").addEventListener("input", autosizeChatInput);
+$("chatInput").addEventListener("keydown", (e) => {
+  // Enter sends in text mode (Shift+Enter for a newline); in code mode Enter
+  // is a newline — code is sent with the button.
+  if (e.key === "Enter" && !e.shiftKey && chat.mode === "text") { e.preventDefault(); sendChat(); }
+});
+$("chatInput").addEventListener("paste", (e) => {
+  const pasted = e.clipboardData?.getData("text") ?? "";
+  if (chat.mode === "text" && looksLikeCode(pasted)) setChatMode("code");
+});
 
 async function join() {
   const code = $("code").value;
@@ -311,12 +363,15 @@ function connect() {
     for (const chunk of state.queue) ws.send(chunk);
     state.queue = [];
     state.queuedBytes = 0;
+    for (const payload of chat.queue) ws.send(payload);
+    chat.queue = [];
   };
   ws.onmessage = (event) => {
     if (typeof event.data !== "string") return;
     let msg;
     try { msg = JSON.parse(event.data); } catch { return; }
     if (msg.type === "result") renderResult(msg);
+    else if (msg.type === "chatAck") markChatSent(msg.id);
     else if (msg.type === "ping") { try { ws.send(JSON.stringify({ type: "pong" })); } catch {} }
     else if (msg.type === "ended") endLocally(msg.reason === "host" ? "The host ended the session." : "The session expired.");
   };
@@ -367,6 +422,87 @@ function renderResult(msg) {
     el.innerHTML = '<span class="placeholder">Start talking — your words appear here as the other person sees them.</span>';
   }
   el.scrollTop = el.scrollHeight;
+}
+
+// MARK: - Chat (one-way: guest → host)
+
+function setChatMode(mode) {
+  chat.mode = mode;
+  const input = $("chatInput");
+  input.classList.toggle("code", mode === "code");
+  input.placeholder = mode === "code"
+    ? "Paste code — they see it as a highlighted code block"
+    : "Message — only they see it";
+  input.rows = mode === "code" ? 3 : 1;
+  $("chatMode").classList.toggle("on", mode === "code");
+  autosizeChatInput();
+  input.focus();
+}
+
+function autosizeChatInput() {
+  const el = $("chatInput");
+  el.style.height = "auto";
+  el.style.height = Math.min(el.scrollHeight, window.innerHeight * 0.4) + "px";
+}
+
+/// Multiline paste that smells like source code → flip to code mode so it
+/// lands on their side as a proper block, indentation intact.
+function looksLikeCode(text) {
+  if (!text || !text.includes("\n")) return false;
+  let score = 0;
+  if (/[{};]\s*$/m.test(text)) score += 2;
+  if (/^\s{2,}\S/m.test(text)) score += 1;
+  if (/\b(function|const|let|var|def|class|import|return|public|private|func|fn|struct|elif|end)\b/.test(text)) score += 2;
+  if (/[=<>!]=|&&|\|\||::|->|=>/.test(text)) score += 1;
+  return score >= 3;
+}
+
+function sendChat() {
+  const raw = $("chatInput").value.replace(/\r\n/g, "\n");
+  const text = (chat.mode === "code" ? raw.replace(/\s+$/, "") : raw.trim()).slice(0, chat.TEXT_CAP);
+  if (!text) return;
+  const id = "m" + chat.nextId++;
+  renderChatBubble(id, chat.mode, text);
+  deliverChat({ type: "chat", id, kind: chat.mode, text });
+  $("chatInput").value = "";
+  // Code is usually a one-off paste — drop back to text for the follow-up.
+  if (chat.mode === "code") setChatMode("text");
+  else autosizeChatInput();
+}
+
+function deliverChat(msg) {
+  const payload = JSON.stringify(msg);
+  if (state.ws?.readyState === 1) {
+    try { state.ws.send(payload); return; } catch {}
+  }
+  chat.queue.push(payload); // flushed on reconnect — arrives late, not lost
+}
+
+function renderChatBubble(id, kind, text) {
+  const log = $("chatLog");
+  log.classList.remove("hidden");
+  const div = document.createElement("div");
+  div.className = "msg pending" + (kind === "code" ? " code" : "");
+  div.dataset.id = id;
+  if (kind === "code") {
+    const head = document.createElement("div");
+    head.className = "codeHead";
+    head.textContent = "code";
+    const pre = document.createElement("pre");
+    pre.textContent = text;
+    div.append(head, pre);
+  } else {
+    div.textContent = text;
+  }
+  log.append(div);
+  log.scrollTop = log.scrollHeight;
+}
+
+function markChatSent(id) {
+  if (typeof id !== "string") return;
+  for (const el of $("chatLog").children) {
+    if (el.dataset.id === id) { el.classList.remove("pending"); return; }
+  }
 }
 
 // MARK: - Controls

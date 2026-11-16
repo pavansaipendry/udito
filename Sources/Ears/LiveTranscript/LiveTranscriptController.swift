@@ -1,6 +1,23 @@
 import AppKit
 import Foundation
 
+/// A chat message the remote guest typed on the join page — one-way,
+/// guest → host only. `id` is the relay's sequence number, which also makes
+/// reconnect replays idempotent.
+struct LiveChatMessage: Identifiable, Equatable {
+    enum Kind {
+        case text
+        case code
+    }
+
+    let id: Int
+    let kind: Kind
+    /// Language hint from the sender; nil means detect at render time.
+    let language: String?
+    let text: String
+    let receivedAt: Date
+}
+
 /// Drives the standalone Live Transcript feature: a code-paired, one-way
 /// channel where a remote person's speech (their phone/laptop mic → relay →
 /// Deepgram) streams into a window on this Mac, live.
@@ -30,6 +47,10 @@ final class LiveTranscriptController: ObservableObject {
     /// Fresh store instance — reuses the tested interim/final folding without
     /// sharing anything with the meeting transcript.
     let transcript = TranscriptStore()
+
+    /// Chat messages the guest typed, in arrival order. Rendered interleaved
+    /// with speech in the panel and included in the saved transcript.
+    @Published private(set) var messages: [LiveChatMessage] = []
 
     private var stream: LiveTranscriptStream?
 
@@ -77,6 +98,7 @@ final class LiveTranscriptController: ObservableObject {
         }
         phase = .creating
         transcript.clear()
+        messages.removeAll()
 
         var request = URLRequest(url: server.appendingPathComponent("sessions"))
         request.httpMethod = "POST"
@@ -147,6 +169,17 @@ final class LiveTranscriptController: ObservableObject {
             }
         case .result(let result):
             transcript.ingest(result, from: .them)
+        case .chat(let seq, let kind, let language, let text, let name):
+            // Reconnect replays can resend a message — the seq id dedupes.
+            guard !text.isEmpty, !messages.contains(where: { $0.id == seq }) else { return }
+            if let name { guestName = name }
+            messages.append(LiveChatMessage(
+                id: seq,
+                kind: kind == "code" ? .code : .text,
+                language: language,
+                text: text,
+                receivedAt: Date()
+            ))
         case .level(let value):
             guestLevel = value
         case .warning(let message):
@@ -192,9 +225,35 @@ final class LiveTranscriptController: ObservableObject {
         EarsLog.info("[live] session ended")
     }
 
+    /// Speech and chat merged into one markdown document, in time order.
+    /// Code messages become fenced blocks so they survive the round trip
+    /// into notes intact.
+    func exportMarkdown() -> String {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "HH:mm:ss"
+        var blocks: [(Date, String)] = transcript.entries.map { entry in
+            (entry.startedAt, "**\(entry.label)** (\(formatter.string(from: entry.startedAt))): \(entry.text)")
+        }
+        let name = guestName ?? "Guest"
+        for message in messages {
+            let time = formatter.string(from: message.receivedAt)
+            switch message.kind {
+            case .text:
+                blocks.append((message.receivedAt, "**\(name)** (\(time)) — message: \(message.text)"))
+            case .code:
+                let language = message.language ?? CodeHighlighter.detectLanguage(of: message.text) ?? ""
+                blocks.append((
+                    message.receivedAt,
+                    "**\(name)** (\(time)) — code:\n\n```\(language)\n\(message.text)\n```"
+                ))
+            }
+        }
+        return blocks.sorted { $0.0 < $1.0 }.map(\.1).joined(separator: "\n\n")
+    }
+
     /// Same home as meeting transcripts, distinct name.
     private func saveTranscriptIfNeeded() {
-        let markdown = transcript.markdown()
+        let markdown = exportMarkdown()
         guard !markdown.isEmpty else { return }
         let dir = SessionController.transcriptsDirectory
         try? FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)

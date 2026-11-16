@@ -12,6 +12,7 @@ final class LiveTranscriptStream: NSObject {
         case status(state: String, guest: String?, guestConnected: Bool)
         case guest(joined: Bool, name: String?)
         case result(DeepgramStream.Result)
+        case chat(seq: Int, kind: String, language: String?, text: String, name: String?)
         case level(Float)
         case warning(String)
         case ended(reason: String?)
@@ -191,6 +192,15 @@ final class LiveTranscriptStream: NSObject {
                 isFinal: message.isFinal ?? false,
                 speechFinal: message.speechFinal ?? false
             )))
+        case "chat":
+            if let seq = message.seq { lastSeq = max(lastSeq, seq) }
+            onEvent?(.chat(
+                seq: message.seq ?? 0,
+                kind: message.kind ?? "text",
+                language: message.lang,
+                text: message.text ?? "",
+                name: message.name
+            ))
         case "level":
             onEvent?(.level(message.value ?? 0))
         case "warning":
@@ -214,6 +224,8 @@ final class LiveTranscriptStream: NSObject {
         let text: String?
         let isFinal: Bool?
         let speechFinal: Bool?
+        let kind: String?
+        let lang: String?
         let value: Float?
         let message: String?
         let reason: String?

@@ -1,12 +1,14 @@
 // One live session: pairs the Ears app with one remote guest by code,
 // pipes the guest's audio into a Deepgram nova-3 live socket, and fans
 // transcript results out to the app (and back to the guest for self-view).
+// The guest can also type chat messages (plain text or code) that go one
+// way: guest → app only.
 //
 // Built to survive bad connections on every leg:
 // - Guest audio is raw linear16 PCM — resumable at any byte, so audio
 //   arriving while Deepgram is down is buffered and flushed on reconnect.
-// - Final results carry sequence numbers; the app replays missed finals
-//   on reconnect via ?since=<seq>.
+// - Final results AND chat messages share one sequence counter; the app
+//   replays anything it missed on reconnect via ?since=<seq>.
 // - KeepAlive frames every 5 s hold the Deepgram socket through silence.
 //
 // Session metadata (including the Deepgram key) lives in DO storage only so
@@ -17,6 +19,8 @@ const WAITING_TTL_MS = 10 * 60 * 1000;
 const LIVE_TTL_MS = 24 * 60 * 60 * 1000;
 const AUDIO_BUFFER_CAP = 1 << 20; // ~1 MB of guest audio while Deepgram is down
 const FINALS_CAP = 500; // replay ring for app reconnects
+const CHATS_CAP = 200; // replay ring for guest chat messages
+const CHAT_TEXT_CAP = 32000; // per message — enough for a hefty code paste
 const DG_MAX_BACKOFF_MS = 8000;
 
 export class LiveSession {
@@ -34,6 +38,7 @@ export class LiveSession {
     this.audioBuffer = []; // [ArrayBuffer] while Deepgram is down (PCM only)
     this.audioBuffered = 0;
     this.finals = []; // [{seq, text, speechFinal}]
+    this.chats = []; // [{type:"chat", seq, kind, lang, text, name, at}]
     this.keepAliveTimer = null;
     this.pingTimer = null;
     // Live-share state (a DO instance is either a code session or a share,
@@ -129,6 +134,7 @@ export class LiveSession {
     this.closeDeepgram();
     this.stopTimers();
     this.finals = [];
+    this.chats = [];
     this.audioBuffer = [];
     this.audioBuffered = 0;
     if (this.meta) this.meta.phase = "ended";
@@ -348,20 +354,23 @@ export class LiveSession {
       guestConnected: this.guestWS != null,
       seq: this.meta.seq,
     });
-    // Replay finals the app missed while its socket was down.
+    // Replay finals and chat messages the app missed while its socket was
+    // down — both share one seq counter, so merge back into arrival order.
     const since = Number(url.searchParams.get("since") ?? NaN);
     if (Number.isFinite(since)) {
-      for (const final of this.finals) {
-        if (final.seq > since) {
-          this.sendApp({
+      const replay = [
+        ...this.finals
+          .filter((final) => final.seq > since)
+          .map((final) => ({
             type: "result",
             seq: final.seq,
             text: final.text,
             isFinal: true,
             speechFinal: final.speechFinal,
-          });
-        }
-      }
+          })),
+        ...this.chats.filter((chat) => chat.seq > since),
+      ].sort((a, b) => a.seq - b.seq);
+      for (const event of replay) this.sendApp(event);
     }
     this.startTimers();
     return new Response(null, { status: 101, webSocket: client });
@@ -408,6 +417,8 @@ export class LiveSession {
         const msg = safeParse(event.data);
         if (msg?.type === "level") {
           this.sendApp({ type: "level", value: Number(msg.value) || 0 });
+        } else if (msg?.type === "chat") {
+          this.handleGuestChat(msg);
         }
         return;
       }
@@ -442,6 +453,35 @@ export class LiveSession {
     while (this.audioBuffered > AUDIO_BUFFER_CAP && this.audioBuffer.length) {
       this.audioBuffered -= this.audioBuffer[0].byteLength ?? 0;
       this.audioBuffer.shift();
+    }
+  }
+
+  /// Guest → app chat. One-way: nothing the host types ever reaches the
+  /// guest. Messages get seq numbers from the same counter as finals so a
+  /// reconnecting app replays them in order; the guest gets an ack so their
+  /// bubble can flip from "sending" to "sent".
+  handleGuestChat(msg) {
+    if (!this.meta || this.meta.phase === "ended") return;
+    const text = String(msg.text ?? "").replace(/\r\n/g, "\n");
+    if (!text.trim()) return;
+    this.meta.seq += 1;
+    const event = {
+      type: "chat",
+      seq: this.meta.seq,
+      kind: msg.kind === "code" ? "code" : "text",
+      lang: typeof msg.lang === "string" ? msg.lang.slice(0, 24) : null,
+      text: text.slice(0, CHAT_TEXT_CAP),
+      name: this.guestName(),
+      at: Date.now(),
+    };
+    this.chats.push(event);
+    if (this.chats.length > CHATS_CAP) this.chats.shift();
+    this.state.waitUntil(this.storage.put("meta", this.meta));
+    this.sendApp(event);
+    if (msg.id != null) {
+      try {
+        this.guestWS?.send(JSON.stringify({ type: "chatAck", id: String(msg.id).slice(0, 64) }));
+      } catch {}
     }
   }
 
